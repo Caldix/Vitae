@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#0f0f1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="Smart household budget tracker with AI insights">
+<title>HomeFinance Pro 🏡</title>
+
+<script type="module"> import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"; import { getFirestore, doc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"; const firebaseConfig = { apiKey: "AIzaSyDybJwP2_CqYZ5llAT6JK57bXCunXf4mZ0", authDomain: "our-home-7f783.firebaseapp.com", projectId: "our-home-7f783", storageBucket: "our-home-7f783.firebasestorage.app", messagingSenderId: "386822506693", appId: "1:386822506693:web:08f284bb82743d1c71c8ac" }; const app = initializeApp(firebaseConfig); const db = getFirestore(app); const DOC_ID = 'main'; const COL = 'homefinance'; window._fbSave = async (data) => { try { await setDoc(doc(db, COL, DOC_ID), { state: JSON.stringify(data), ts: Date.now() }); } catch(e) { console.warn('Firebase save error:', e); } }; window._fbListen = (cb) => onSnapshot(doc(db, COL, DOC_ID), snap => { if (!snap.exists()) return; try { cb(JSON.parse(snap.data().state)); } catch(e) {} }); window._fbLoad = async () => { try { const snap = await getDoc(doc(db, COL, DOC_ID)); if (snap.exists()) return JSON.parse(snap.data().state); } catch(e) { console.warn('Firebase load error:', e); } return null; }; window._fbReady = true; window.dispatchEvent(new Event('firebase-ready')); </script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@300;400;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+
+<style> /* ─── DESIGN TOKENS ─────────────────────────────── */ :root { --bg: #0f0f1a; --surface: #1a1a2e; --surface2: #242438; --surface3: #2e2e48; --accent: #e8c547; --accent2: #7c6af7; --accent3: #4ecdc4; --danger: #ff6b6b; --success: #4ecdc4; --warning: #e8c547; --ing: #ff6900; --cash: #27ae60; --rev: #3498db; --text: #f0ede8; --text2: #a8a4b8; --text3: #6b6880; --border: rgba(255,255,255,0.07); --radius: 16px; --radius-sm: 10px; --shadow: 0 4px 24px rgba(0,0,0,0.4); --transition: 0.18s ease; } /* ─── RESET ─────────────────────────────────────── */ *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; } html { scroll-behavior: smooth; } body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; -webkit-font-smoothing: antialiased; } /* ─── SCREENS ────────────────────────────────────── */ .screen { display: none; min-height: 100vh; padding-bottom: 90px; } .screen.active { display: block; animation: fadeIn 0.2s ease; } @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } } /* ─── TOP BAR ────────────────────────────────────── */ .topbar { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 12px; position: sticky; top: 0; z-index: 100; background: linear-gradient(to bottom, var(--bg) 85%, transparent); backdrop-filter: blur(8px); } .topbar-title { font-family: 'Fraunces', serif; font-size: 1.5rem; font-weight: 600; color: var(--accent); } .topbar-sub { font-size: 0.75rem; color: var(--text2); margin-top: 2px; } /* ─── ICON BUTTON ────────────────────────────────── */ .icon-btn { width: 40px; height: 40px; border-radius: 50%; border: none; background: var(--surface2); color: var(--text); font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform var(--transition), background var(--transition); flex-shrink: 0; } .icon-btn:active { transform: scale(0.9); background: var(--surface3); } /* ─── BOTTOM NAV ─────────────────────────────────── */ .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); display: flex; z-index: 200; padding-bottom: env(safe-area-inset-bottom); } .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 10px 4px 8px; background: none; border: none; color: var(--text3); font-size: 0.6rem; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: color var(--transition); gap: 3px; } .nav-btn .nav-icon { font-size: 1.25rem; transition: transform var(--transition); } .nav-btn.active { color: var(--accent); } .nav-btn.active .nav-icon { transform: translateY(-2px); } /* ─── CARDS ──────────────────────────────────────── */ .card { background: var(--surface); border-radius: var(--radius); padding: 18px; margin: 0 16px 12px; border: 1px solid var(--border); } .card-title { font-family: 'Fraunces', serif; font-size: 0.78rem; color: var(--text2); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px; } /* ─── MONTH SELECTOR ─────────────────────────────── */ .month-selector { display: flex; align-items: center; gap: 12px; margin: 0 16px 16px; } .month-btn { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 1.1rem; cursor: pointer; transition: background var(--transition); } .month-btn:active { background: var(--surface2); } .month-label { flex: 1; text-align: center; font-family: 'Fraunces', serif; font-size: 1.1rem; font-weight: 600; } /* ─── BUDGET RING ────────────────────────────────── */ .budget-ring { display: flex; align-items: center; gap: 20px; padding: 4px 0; } .ring-wrap { position: relative; width: 90px; height: 90px; flex-shrink: 0; } .ring-wrap svg { transform: rotate(-90deg); } .ring-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; } .ring-pct { font-family: 'Fraunces', serif; font-size: 1.3rem; font-weight: 600; } .ring-lbl { font-size: 0.6rem; color: var(--text2); } .budget-stats { flex: 1; } .budget-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; } .budget-row .label { font-size: 0.8rem; color: var(--text2); } .budget-row .value { font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 600; } .value-good { color: var(--success) !important; } .value-warn { color: var(--warning) !important; } .value-bad { color: var(--danger) !important; } /* ─── PAYMENT SPLIT ──────────────────────────────── */ .payment-split { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; } .pay-chip { background: var(--surface2); border-radius: var(--radius-sm); padding: 10px 8px; text-align: center; } .pay-chip .pay-label { font-size: 0.65rem; color: var(--text2); margin-bottom: 4px; } .pay-chip .pay-amount { font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 600; } .pay-chip.ing .pay-amount { color: var(--ing); } .pay-chip.cash .pay-amount { color: var(--cash); } .pay-chip.rev .pay-amount { color: var(--rev); } /* ─── CATEGORY ITEMS ─────────────────────────────── */ .cat-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: var(--surface2); border-radius: var(--radius-sm); cursor: pointer; transition: background var(--transition); } .cat-item:active { background: var(--surface3); } .cat-icon { font-size: 1.2rem; width: 28px; text-align: center; } .cat-info { flex: 1; } .cat-name { font-size: 0.85rem; font-weight: 500; } .cat-sub { font-size: 0.7rem; color: var(--text2); } .cat-amount { font-family: 'Fraunces', serif; font-size: 0.95rem; font-weight: 600; } .cat-bar-wrap { height: 3px; background: var(--surface3); border-radius: 2px; margin-top: 5px; overflow: hidden; } .cat-bar { height: 100%; border-radius: 2px; transition: width 0.6s ease; } /* ─── FAB ────────────────────────────────────────── */ .fab { position: fixed; bottom: 80px; right: 20px; width: 56px; height: 56px; border-radius: 50%; background: var(--accent); color: #1a1a2e; border: none; font-size: 1.6rem; cursor: pointer; box-shadow: 0 4px 20px rgba(232,197,71,0.45); z-index: 150; display: flex; align-items: center; justify-content: center; transition: transform var(--transition), box-shadow var(--transition); } .fab:active { transform: scale(0.9); box-shadow: 0 2px 10px rgba(232,197,71,0.3); } /* ─── MODAL ──────────────────────────────────────── */ .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.72); z-index: 300; align-items: flex-end; } .modal-overlay.open { display: flex; } .modal { width: 100%; background: var(--surface); border-radius: 24px 24px 0 0; padding: 24px 20px max(40px, env(safe-area-inset-bottom)); max-height: 92vh; overflow-y: auto; animation: slideUp 0.28s cubic-bezier(0.32,0.72,0,1); } @keyframes slideUp { from { transform: translateY(100%); } to { transform: none; } } .modal-handle { width: 40px; height: 4px; background: var(--surface3); border-radius: 2px; margin: 0 auto 20px; } .modal h2 { font-family: 'Fraunces', serif; font-size: 1.3rem; margin-bottom: 20px; } /* ─── FORM ───────────────────────────────────────── */ .form-group { margin-bottom: 16px; } .form-label { font-size: 0.8rem; color: var(--text2); margin-bottom: 6px; display: block; } .form-input, .form-select, .form-textarea { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); padding: 12px 14px; font-size: 0.95rem; font-family: 'DM Sans', sans-serif; outline: none; transition: border-color var(--transition); appearance: none; } .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--accent); } .form-select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23a8a4b8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; } .form-select option { background: var(--surface2); } .form-textarea { resize: vertical; min-height: 80px; } /* ─── PAY SELECTOR ───────────────────────────────── */ .pay-selector { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; } .pay-opt { padding: 10px; border-radius: var(--radius-sm); border: 2px solid var(--border); background: var(--surface2); color: var(--text2); font-size: 0.8rem; font-family: 'DM Sans', sans-serif; cursor: pointer; text-align: center; transition: all var(--transition); font-weight: 500; } .pay-opt:active { transform: scale(0.96); } .pay-opt.sel-ing { border-color: var(--ing); color: var(--ing); background: rgba(255,105,0,0.12); } .pay-opt.sel-cash { border-color: var(--cash); color: var(--cash); background: rgba(39,174,96,0.12); } .pay-opt.sel-rev { border-color: var(--rev); color: var(--rev); background: rgba(52,152,219,0.12); } /* ─── BUTTONS ────────────────────────────────────── */ .btn { width: 100%; padding: 14px; border-radius: var(--radius-sm); border: none; font-size: 0.95rem; font-family: 'DM Sans', sans-serif; font-weight: 500; cursor: pointer; transition: all var(--transition); } .btn:active { transform: scale(0.98); } .btn-primary { background: var(--accent); color: #1a1a2e; } .btn-secondary { background: var(--surface2); color: var(--text); } .btn-danger { background: rgba(255,107,107,0.15); color: var(--danger); border: 1px solid rgba(255,107,107,0.3); } /* ─── TRANSACTIONS ───────────────────────────────── */ .tx-list { display: flex; flex-direction: column; gap: 4px; } .tx-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: var(--surface2); border-radius: var(--radius-sm); cursor: pointer; transition: background var(--transition); } .tx-item:active { background: var(--surface3); } .tx-icon { font-size: 1.1rem; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: var(--surface3); border-radius: 8px; flex-shrink: 0; } .tx-info { flex: 1; min-width: 0; } .tx-name { font-size: 0.85rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .tx-meta { font-size: 0.7rem; color: var(--text2); } .tx-right { text-align: right; flex-shrink: 0; } .tx-amount { font-family: 'Fraunces', serif; font-size: 0.95rem; font-weight: 600; color: var(--danger); } .tx-pay { font-size: 0.65rem; margin-top: 2px; } .tx-pay.ing { color: var(--ing); } .tx-pay.cash { color: var(--cash); } .tx-pay.rev { color: var(--rev); } /* ─── FIXED EXPENSES ─────────────────────────────── */ .fixed-item { display: flex; align-items: center; gap: 10px; padding: 11px 12px; background: var(--surface2); border-radius: var(--radius-sm); margin-bottom: 6px; transition: opacity var(--transition); } .fixed-item.paid { opacity: 0.5; } .fixed-check { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--surface3); background: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; flex-shrink: 0; transition: all var(--transition); color: transparent; } .fixed-check.done { background: var(--success); border-color: var(--success); color: #fff; } .fixed-info { flex: 1; min-width: 0; } .fixed-name { font-size: 0.85rem; font-weight: 500; } .fixed-sub { font-size: 0.7rem; color: var(--text2); } .fixed-amount { font-family: 'Fraunces', serif; font-size: 0.95rem; font-weight: 600; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; } .fixed-pay { font-size: 0.65rem; margin-top: 2px; text-align: right; } .fixed-pay.ing { color: var(--ing); } .fixed-pay.cash { color: var(--cash); } .fixed-pay.rev { color: var(--rev); } /* ─── SCAN ───────────────────────────────────────── */ .scan-area { margin: 0 16px; border: 2px dashed var(--surface3); border-radius: var(--radius); padding: 32px 20px; text-align: center; cursor: pointer; transition: border-color var(--transition); } .scan-area:active, .scan-area.drag-over { border-color: var(--accent); } .scan-icon { font-size: 3rem; margin-bottom: 12px; } .scan-title { font-family: 'Fraunces', serif; font-size: 1.1rem; margin-bottom: 6px; } .scan-sub { font-size: 0.8rem; color: var(--text2); } .ai-result { background: var(--surface2); border-radius: var(--radius); padding: 16px; margin: 0 16px; border-left: 3px solid var(--accent); } .ai-result-title { font-size: 0.75rem; color: var(--accent); margin-bottom: 10px; letter-spacing: 0.1em; text-transform: uppercase; } .ai-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 0.85rem; } .ai-item:last-child { border-bottom: none; } .ai-total { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); font-weight: 600; font-family: 'Fraunces', serif; } /* ─── STOCK ──────────────────────────────────────── */ .stock-chip { padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); background: var(--surface); color: var(--text2); font-size: 0.8rem; cursor: pointer; transition: all var(--transition); white-space: nowrap; } .stock-chip.active { background: var(--accent); color: #1a1a2e; border-color: var(--accent); } .stock-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: var(--surface2); border-radius: var(--radius-sm); margin-bottom: 6px; } /* ─── TIPS ───────────────────────────────────────── */ .tip-card { background: var(--surface); border-radius: var(--radius); padding: 16px; margin: 0 16px 10px; border: 1px solid var(--border); position: relative; overflow: hidden; } .tip-card::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: var(--accent2); } .tip-badge { font-size: 0.65rem; color: var(--accent2); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 6px; } .tip-text { font-size: 0.85rem; line-height: 1.5; color: var(--text2); } .tip-saving { font-family: 'Fraunces', serif; font-size: 1rem; color: var(--success); margin-top: 6px; } /* ─── BUDGET PLANNER ─────────────────────────────── */ .alloc-row { display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--surface2); border-radius: var(--radius-sm); margin-bottom: 8px; } .alloc-icon { font-size: 1.2rem; width: 32px; text-align: center; } .alloc-info { flex: 1; } .alloc-name { font-size: 0.85rem; font-weight: 500; } .alloc-sub { font-size: 0.7rem; color: var(--text2); } .alloc-input { width: 110px; background: var(--surface3); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 8px 10px; font-size: 0.9rem; font-family: 'Fraunces', serif; font-weight: 600; text-align: right; outline: none; transition: border-color var(--transition); } .alloc-input:focus { border-color: var(--accent); } .remain-card { background: linear-gradient(135deg, rgba(78,205,196,0.15), rgba(124,106,247,0.1)); border: 1px solid rgba(78,205,196,0.3); border-radius: var(--radius); padding: 20px; margin: 0 16px 12px; text-align: center; } .remain-label { font-size: 0.75rem; color: var(--text2); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.08em; } .remain-value { font-family: 'Fraunces', serif; font-size: 2.2rem; font-weight: 600; } .remain-sub { font-size: 0.75rem; color: var(--text2); margin-top: 6px; } /* ─── PAYMENT GOALS ──────────────────────────────── */ .payment-goal { background: var(--surface2); border-radius: var(--radius-sm); padding: 14px 12px; margin-bottom: 8px; border-left: 3px solid var(--accent2); position: relative; } .payment-goal.urgent { border-left-color: var(--danger); } .payment-goal.soon { border-left-color: var(--warning); } .payment-goal.ok { border-left-color: var(--success); } .pg-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; } .pg-title { font-size: 0.9rem; font-weight: 600; flex: 1; } .pg-edit { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 0.8rem; padding: 2px 6px; } .pg-meta { font-size: 0.72rem; color: var(--text2); margin-bottom: 6px; } .pg-bar-wrap { height: 6px; background: var(--surface3); border-radius: 3px; overflow: hidden; margin-bottom: 6px; } .pg-bar { height: 100%; border-radius: 3px; transition: width 0.5s ease; } .pg-footer { display: flex; justify-content: space-between; font-size: 0.72rem; } .pg-saved { color: var(--success); font-family: 'Fraunces', serif; font-weight: 600; } .pg-deadline { font-size: 0.7rem; font-weight: 600; padding: 2px 8px; border-radius: 10px; } .pg-deadline.urgent { background: rgba(255,107,107,0.2); color: var(--danger); } .pg-deadline.soon { background: rgba(232,197,71,0.2); color: var(--warning); } .pg-deadline.ok { background: rgba(78,205,196,0.2); color: var(--success); } /* ─── SETTINGS ───────────────────────────────────── */ .settings-section { margin: 0 16px 20px; } .settings-title { font-size: 0.7rem; color: var(--text2); letter-spacing: 0.1em; text-transform: uppercase; padding: 0 4px; margin-bottom: 8px; } .settings-item { display: flex; align-items: center; padding: 14px; background: var(--surface); border-bottom: 1px solid var(--border); cursor: pointer; transition: background var(--transition); } .settings-item:active { background: var(--surface2); } .settings-item:first-child { border-radius: var(--radius) var(--radius) 0 0; } .settings-item:last-child { border-radius: 0 0 var(--radius) var(--radius); border-bottom: none; } .settings-item:only-child { border-radius: var(--radius); } .settings-icon { font-size: 1.1rem; margin-right: 12px; } .settings-text { flex: 1; } .settings-name { font-size: 0.9rem; } .settings-desc { font-size: 0.75rem; color: var(--text2); } .settings-action { color: var(--text2); font-size: 0.85rem; } /* ─── TOGGLE ─────────────────────────────────────── */ .toggle { width: 44px; height: 24px; border-radius: 12px; background: var(--surface3); position: relative; cursor: pointer; transition: background var(--transition); flex-shrink: 0; } .toggle.on { background: var(--accent); } .toggle::after { content: ''; position: absolute; width: 18px; height: 18px; border-radius: 50%; background: white; top: 3px; left: 3px; transition: transform var(--transition); } .toggle.on::after { transform: translateX(20px); } /* ─── ONBOARDING ─────────────────────────────────── */ .onboarding { display: none; position: fixed; inset: 0; background: var(--bg); z-index: 500; overflow-y: auto; } .onboarding.show { display: block; } .ob-header { text-align: center; padding: 48px 24px 32px; } .ob-emoji { font-size: 3rem; margin-bottom: 16px; } .ob-title { font-family: 'Fraunces', serif; font-size: 1.8rem; font-weight: 600; color: var(--accent); margin-bottom: 8px; } .ob-sub { font-size: 0.9rem; color: var(--text2); line-height: 1.5; } .ob-steps { padding: 0 20px 40px; } .ob-step { display: none; } .ob-step.active { display: block; } .ob-step-title { font-family: 'Fraunces', serif; font-size: 1.2rem; margin-bottom: 6px; } .ob-step-sub { font-size: 0.82rem; color: var(--text2); margin-bottom: 20px; line-height: 1.5; } .ob-progress { display: flex; gap: 6px; justify-content: center; margin: 0 24px 24px; } .ob-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--surface3); transition: all 0.2s; } .ob-dot.done { background: var(--accent); } .ob-dot.active { background: var(--accent); width: 20px; border-radius: 3px; } /* ─── MISC ───────────────────────────────────────── */ .loading { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 20px; color: var(--text2); font-size: 0.85rem; } .spinner { width: 20px; height: 20px; border: 2px solid var(--surface3); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } } .empty-state { text-align: center; padding: 32px 20px; color: var(--text2); } .empty-icon { font-size: 2.5rem; margin-bottom: 10px; } .empty-text { font-size: 0.85rem; line-height: 1.5; } .section-header { display: flex; align-items: center; justify-content: space-between; padding: 4px 16px 8px; } .section-header h3 { font-family: 'Fraunces', serif; font-size: 1rem; } .section-header a { font-size: 0.78rem; color: var(--accent); text-decoration: none; } .chip-row { display: flex; gap: 8px; overflow-x: auto; padding: 0 16px 4px; scrollbar-width: none; } .chip-row::-webkit-scrollbar { display: none; } .chip { white-space: nowrap; padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); background: var(--surface); color: var(--text2); font-size: 0.8rem; cursor: pointer; transition: all var(--transition); flex-shrink: 0; } .chip.active { background: var(--accent); color: #1a1a2e; border-color: var(--accent); } .delete-btn { background: none; border: none; color: var(--danger); font-size: 0.8rem; cursor: pointer; padding: 2px 6px; opacity: 0.6; transition: opacity var(--transition); } .delete-btn:active { opacity: 1; } .api-key-wrap { position: relative; } .api-key-wrap .form-input { padding-right: 44px; } .api-key-toggle { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text2); cursor: pointer; font-size: 1rem; } .centenar-tracker { background: linear-gradient(135deg, rgba(124,106,247,0.2), rgba(78,205,196,0.1)); border: 1px solid rgba(124,106,247,0.3); } .centenar-progress { height: 8px; background: var(--surface3); border-radius: 4px; margin: 10px 0; overflow: hidden; } .centenar-bar { height: 100%; background: linear-gradient(to right, var(--accent2), var(--accent3)); border-radius: 4px; transition: width 0.6s ease; } .income-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: var(--surface2); border-radius: var(--radius-sm); margin-bottom: 6px; } .income-amount { font-family: 'Fraunces', serif; color: var(--success); } ::-webkit-scrollbar { width: 0; } /* ─── SYNC INDICATOR ─────────────────────────────── */ #sync-indicator { position: fixed; top: 60px; right: 16px; background: rgba(78,205,196,0.9); color: #000; padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 500; z-index: 1000; transition: opacity 0.5s; pointer-events: none; } /* ─── TOAST ──────────────────────────────────────── */ .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: var(--surface2); color: var(--text); padding: 10px 20px; border-radius: 20px; font-size: 0.85rem; z-index: 400; box-shadow: var(--shadow); border: 1px solid var(--border); animation: toastIn 0.2s ease, toastOut 0.3s ease 2s forwards; white-space: nowrap; } @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%) none; } } @keyframes toastOut { to { opacity: 0; transform: translateX(-50%) translateY(10px); } } </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════ ONBOARDING ═══════════════════════════════════════════════════ -->
+<div class="onboarding" id="onboarding">
+  <div class="ob-header">
+    <div class="ob-emoji">🏡</div>
+    <div class="ob-title">HomeFinance Pro</div>
+    <div class="ob-sub">Let's personalize your household budget tracker. Just a few questions to get started.</div>
+  </div>
+  <div class="ob-progress" id="ob-progress"></div>
+  <div class="ob-steps">
+
+    <!-- Step 0: Family -->
+    <div class="ob-step active" data-step="0">
+      <div class="ob-step-title">👨‍👩‍👧‍👦 Your Household</div>
+      <div class="ob-step-sub">Who lives with you?</div>
+      <div class="form-group">
+        <label class="form-label">Your name</label>
+        <input class="form-input" id="ob-name" placeholder="e.g. Alex" type="text" autocomplete="given-name">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Partner's name (optional)</label>
+        <input class="form-input" id="ob-partner" placeholder="e.g. Jordan" autocomplete="given-name">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Other household members</label>
+        <div id="ob-members-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px"></div>
+        <div style="display:flex;gap:8px">
+          <input class="form-input" id="ob-member-name" placeholder="Name" style="flex:1">
+          <input class="form-input" id="ob-member-age" placeholder="Age" type="number" style="width:80px" min="0" max="120">
+          <button class="btn btn-secondary" onclick="addObMember()" style="width:44px;padding:0">+</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 1: Habits -->
+    <div class="ob-step" data-step="1">
+      <div class="ob-step-title">🍽️ Spending Habits</div>
+      <div class="ob-step-sub">This helps us give smarter suggestions.</div>
+      <div class="form-group">
+        <label class="form-label">What do you do at home? (select all that apply)</label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px" id="ob-cooking-opts">
+          <span class="stock-chip" onclick="this.classList.toggle('active')" data-val="homebread">🍞 Home bread</span>
+          <span class="stock-chip" onclick="this.classList.toggle('active')" data-val="cookhome">🍳 Cook at home</span>
+          <span class="stock-chip" onclick="this.classList.toggle('active')" data-val="noeatout">🚫 Never eat out</span>
+          <span class="stock-chip" onclick="this.classList.toggle('active')" data-val="bulkchicken">🐔 Bulk chicken</span>
+          <span class="stock-chip" onclick="this.classList.toggle('active')" data-val="bulkveggies">🥕 Bulk veggies</span>
+          <span class="stock-chip" onclick="this.classList.toggle('active')" data-val="mealprep">📦 Meal prep</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Dietary restrictions / allergies</label>
+        <input class="form-input" id="ob-allergies" placeholder="e.g. gluten-free, dairy-free...">
+      </div>
+    </div>
+
+    <!-- Step 2: Budget -->
+    <div class="ob-step" data-step="2">
+      <div class="ob-step-title">💰 Monthly Budget</div>
+      <div class="ob-step-sub">Starting values — you can change these anytime.</div>
+      <div class="form-group">
+        <label class="form-label">Monthly income ($)</label>
+        <input class="form-input" id="ob-income" type="number" value="5000" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">🛒 Groceries budget ($)</label>
+        <input class="form-input" id="ob-food-budget" type="number" value="800" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">🚨 Emergency fund (monthly $)</label>
+        <input class="form-input" id="ob-emergency" type="number" value="200" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">🏥 Healthcare budget ($)</label>
+        <input class="form-input" id="ob-health" type="number" value="150" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">🐷 Monthly savings goal ($)</label>
+        <input class="form-input" id="ob-savings" type="number" value="500" min="0">
+      </div>
+    </div>
+
+    <!-- Step 3: API Key -->
+    <div class="ob-step" data-step="3">
+      <div class="ob-step-title">🤖 AI Features</div>
+      <div class="ob-step-sub">Unlock receipt scanning and personalized budget advice. Completely optional.</div>
+      <div class="form-group">
+        <label class="form-label">Anthropic API Key</label>
+        <div class="api-key-wrap">
+          <input class="form-input" id="ob-apikey" type="password" placeholder="sk-ant-...">
+          <button class="api-key-toggle" onclick="togglePassVis('ob-apikey',this)">👁</button>
+        </div>
+        <div style="font-size:0.72rem;color:var(--text3);margin-top:6px;line-height:1.5">
+          Get your key at <strong>console.anthropic.com</strong>. Stored locally on your device only — never sent to our servers.
+        </div>
+      </div>
+      <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:14px;border-left:3px solid var(--accent2)">
+        <div style="font-size:.78rem;font-weight:500;margin-bottom:6px">🔓 With AI you get:</div>
+        <div style="font-size:.75rem;color:var(--text2);line-height:1.8">
+          📷 Auto-scan receipts from any store<br>
+          🥘 Meal suggestions based on your pantry<br>
+          📊 Personalized savings recommendations<br>
+          ✨ Smart budget optimization
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div style="padding:0 20px 60px;display:flex;gap:10px" id="ob-btns">
+    <button class="btn btn-secondary" id="ob-back" onclick="obPrev()" style="display:none">← Back</button>
+    <button class="btn btn-primary" id="ob-next" onclick="obNext()">Continue →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ SCREEN: DASHBOARD ═══════════════════════════════════════════════════ -->
+<div class="screen active" id="screen-home">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title" id="greeting">HomeFinance Pro 🏡</div>
+      <div class="topbar-sub" id="topbar-sub">Loading...</div>
+    </div>
+    <button class="icon-btn" onclick="showScreen('screen-settings')" aria-label="Settings">⚙️</button>
+  </div>
+
+  <div class="month-selector">
+    <button class="month-btn" onclick="changeMonth(-1)" aria-label="Previous month">‹</button>
+    <div class="month-label" id="month-label">—</div>
+    <button class="month-btn" onclick="changeMonth(1)" aria-label="Next month">›</button>
+  </div>
+
+  <!-- Budget ring -->
+  <div class="card">
+    <div class="card-title">Monthly Budget</div>
+    <div class="budget-ring">
+      <div class="ring-wrap" role="img" aria-label="Budget usage ring">
+        <svg width="90" height="90" viewBox="0 0 90 90">
+          <circle cx="45" cy="45" r="38" fill="none" stroke="#2e2e48" stroke-width="8"/>
+          <circle cx="45" cy="45" r="38" fill="none" stroke="#e8c547" stroke-width="8" stroke-dasharray="239" stroke-dashoffset="239" id="ring-progress" stroke-linecap="round"/>
+        </svg>
+        <div class="ring-center">
+          <div class="ring-pct" id="ring-pct">0%</div>
+          <div class="ring-lbl">spent</div>
+        </div>
+      </div>
+      <div class="budget-stats">
+        <div class="budget-row"><span class="label">Income</span><span class="value value-good" id="dash-income">$0</span></div>
+        <div class="budget-row"><span class="label">Spent</span><span class="value" id="dash-spent">$0</span></div>
+        <div class="budget-row"><span class="label">Remaining</span><span class="value" id="dash-left" style="color:var(--accent)">$0</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment split -->
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="card-title" style="margin-bottom:0">By Account</div>
+      <div style="display:flex;gap:6px">
+        <button class="pay-tab-btn active" id="tab-est" onclick="switchPayTab('est')" style="padding:4px 10px;border-radius:12px;border:1px solid var(--accent);background:var(--accent);color:#1a1a2e;font-size:.7rem;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500">
+          Estimated
+        </button>
+        <button class="pay-tab-btn" id="tab-real" onclick="switchPayTab('real')" style="padding:4px 10px;border-radius:12px;border:1px solid var(--border);background:none;color:var(--text2);font-size:.7rem;cursor:pointer;font-family:'DM Sans',sans-serif">
+          Paid
+        </button>
+      </div>
+    </div>
+    <div class="payment-split">
+      <div class="pay-chip ing"><div class="pay-label">Checking</div><div class="pay-amount" id="dash-ing">$0</div></div>
+      <div class="pay-chip cash"><div class="pay-label">Cash</div><div class="pay-amount" id="dash-cash">$0</div></div>
+      <div class="pay-chip rev"><div class="pay-label">Card</div><div class="pay-amount" id="dash-rev">$0</div></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+      <span style="font-size:.72rem;color:var(--text3)" id="pay-tab-label">Estimated from all fixed expenses + logged transactions</span>
+    </div>
+  </div>
+
+  <!-- Savings goal card -->
+  <div class="card centenar-tracker" id="savings-goal-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div class="card-title" style="margin-bottom:0" id="savings-card-title">🏦 Savings Goal</div>
+      <button onclick="openSavingsSettings()" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:.8rem;padding:2px 6px">⚙️</button>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:baseline">
+      <div style="font-family:'Fraunces',serif;font-size:1.5rem;font-weight:600" id="savings-total">$0</div>
+      <div style="font-size:0.75rem;color:var(--text2)">target <span id="savings-target-lbl">$2,400</span>/yr</div>
+    </div>
+    <div class="centenar-progress"><div class="centenar-bar" id="savings-bar" style="width:0%"></div></div>
+    <div style="display:flex;justify-content:space-between;font-size:0.75rem;color:var(--text2)">
+      <span id="savings-this-year">This year: $0</span>
+      <span id="savings-pct">0% of goal</span>
+    </div>
+  </div>
+
+  <!-- Payment goals mini -->
+  <div id="dash-pg-card" style="display:none;margin:0 16px 12px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div style="font-family:'Fraunces',serif;font-size:1rem">🎯 Upcoming Payments</div>
+      <a href="#" onclick="showScreen('screen-upcoming');renderPaymentGoals();return false" style="font-size:.78rem;color:var(--accent);text-decoration:none">View all</a>
+    </div>
+    <div id="dash-pg-list"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0 0;border-top:1px solid var(--border);margin-top:4px">
+      <span style="font-size:.75rem;color:var(--text2)">Monthly needed</span>
+      <span style="font-family:'Fraunces',serif;font-size:.95rem;font-weight:600;color:var(--accent)" id="dash-pg-monthly">$0</span>
+    </div>
+  </div>
+
+  <!-- Categories -->
+  <div class="section-header">
+    <h3>Categories</h3>
+    <a href="#" onclick="showScreen('screen-expenses');return false">See all</a>
+  </div>
+  <div style="padding:0 16px" id="dash-categories">
+    <div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">No expenses yet this month</div></div>
+  </div>
+
+  <!-- Recent -->
+  <div class="section-header" style="margin-top:8px">
+    <h3>Recent Transactions</h3>
+    <a href="#" onclick="showScreen('screen-expenses');return false">All</a>
+  </div>
+  <div style="padding:0 16px 8px" id="dash-recent">
+    <div class="empty-state"><div class="empty-icon">🧾</div><div class="empty-text">Tap + to add your first expense</div></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ SCREEN: EXPENSES ═══════════════════════════════════════════════════ -->
+<div class="screen" id="screen-expenses">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">Expenses</div>
+      <div class="topbar-sub" id="exp-month-sub">—</div>
+    </div>
+    <button class="icon-btn" onclick="openAddExpense()" aria-label="Add expense">+</button>
+  </div>
+
+  <div class="month-selector">
+    <button class="month-btn" onclick="changeMonth(-1)">‹</button>
+    <div class="month-label" id="exp-month-label">—</div>
+    <button class="month-btn" onclick="changeMonth(1)">›</button>
+  </div>
+
+  <!-- Fixed expenses -->
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 16px 8px">
+    <h3 style="font-family:'Fraunces',serif;font-size:1rem">📋 Fixed Monthly Bills</h3>
+    <a href="#" onclick="openManageFixed();return false" style="font-size:.78rem;color:var(--accent);text-decoration:none">Edit list</a>
+  </div>
+  <div style="padding:0 16px;margin-bottom:4px;font-size:.72rem;color:var(--text3)">Tap amount to edit · Check ✓ when paid</div>
+  <div style="padding:0 16px" id="fixed-list"></div>
+
+  <!-- Variable expenses -->
+  <div style="padding:8px 16px 4px"></div>
+  <div style="padding:0 16px" id="exp-list">
+    <div class="empty-state"><div class="empty-icon">🧾</div><div class="empty-text">No variable expenses this month</div></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ SCREEN: SCAN ═══════════════════════════════════════════════════ -->
+<div class="screen" id="screen-scan">
+  <div class="topbar">
+    <div class="topbar-title">Scan Receipt 📸</div>
+  </div>
+
+  <div style="padding:0 16px 12px;font-size:0.82rem;color:var(--text2);line-height:1.5">
+    Upload any receipt — photo, screenshot or PDF. AI extracts all items automatically.
+  </div>
+
+  <div class="scan-area" id="scan-area" onclick="document.getElementById('scan-file').click()" role="button" tabindex="0">
+    <input type="file" id="scan-file" accept="image/*,application/pdf,.pdf" multiple onchange="handleScanFiles(event)" style="display:none">
+    <div class="scan-icon">📷</div>
+    <div class="scan-title">Tap to upload receipt</div>
+    <div class="scan-sub">Photo, screenshot or PDF · any store</div>
+  </div>
+
+  <div id="scan-previews"></div>
+
+  <div id="scan-loading" style="display:none">
+    <div class="loading"><div class="spinner"></div> AI is analyzing your receipt...</div>
+  </div>
+
+  <div id="scan-result" style="display:none">
+    <div style="padding:12px 16px 8px;font-family:'Fraunces',serif;font-size:1rem">Extracted items:</div>
+    <div class="ai-result">
+      <div class="ai-result-title">✨ AI Analysis</div>
+      <div id="scan-items-list"></div>
+      <div class="ai-total"><span>Total</span><span id="scan-total">$0</span></div>
+    </div>
+    <div style="padding:12px 16px">
+      <div class="form-group">
+        <label class="form-label">Category</label>
+        <select class="form-select" id="scan-cat"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Payment method</label>
+        <div class="pay-selector">
+          <button class="pay-opt" onclick="selectPay('scan','ing')" id="scan-pay-ing">Checking</button>
+          <button class="pay-opt" onclick="selectPay('scan','cash')" id="scan-pay-cash">Cash</button>
+          <button class="pay-opt" onclick="selectPay('scan','rev')" id="scan-pay-rev">Card</button>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="saveScanExpense()">💾 Save Expense</button>
+    </div>
+  </div>
+
+  <div id="no-api-msg" style="display:none;padding:16px">
+    <div class="tip-card">
+      <div class="tip-badge">⚠️ API Key Required</div>
+      <div class="tip-text">Add your Anthropic API Key in Settings → AI & Integrations to enable receipt scanning.</div>
+      <button class="btn btn-secondary" style="margin-top:12px" onclick="showScreen('screen-settings')">Go to Settings</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ SCREEN: PANTRY ═══════════════════════════════════════════════════ -->
+<div class="screen" id="screen-stock">
+  <div class="topbar">
+    <div class="topbar-title">Pantry & Meals 🥘</div>
+    <button class="icon-btn" onclick="openAddStock()" aria-label="Add item">+</button>
+  </div>
+
+  <div style="padding:0 16px 12px;font-size:0.82rem;color:var(--text2)">
+    Track what you have at home. Get meal ideas to reduce food waste.
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:8px;padding:0 16px 16px" id="stock-cats">
+    <span class="stock-chip active" onclick="filterStock(this,'all')" data-cat="all">All</span>
+    <span class="stock-chip" onclick="filterStock(this,'veggies')" data-cat="veggies">🥕 Veggies</span>
+    <span class="stock-chip" onclick="filterStock(this,'meat')" data-cat="meat">🐔 Meat</span>
+    <span class="stock-chip" onclick="filterStock(this,'dairy')" data-cat="dairy">🥛 Dairy</span>
+    <span class="stock-chip" onclick="filterStock(this,'canned')" data-cat="canned">🥫 Canned</span>
+    <span class="stock-chip" onclick="filterStock(this,'spices')" data-cat="spices">🧂 Spices</span>
+    <span class="stock-chip" onclick="filterStock(this,'bread')" data-cat="bread">🍞 Bread</span>
+    <span class="stock-chip" onclick="filterStock(this,'drinks')" data-cat="drinks">🧃 Drinks</span>
+    <span class="stock-chip" onclick="filterStock(this,'care')" data-cat="care">🧴 Care</span>
+    <span class="stock-chip" onclick="filterStock(this,'other')" data-cat="other">📦 Other</span>
+  </div>
+
+  <div style="padding:0 16px" id="stock-list">
+    <div class="empty-state"><div class="empty-icon">🥗</div><div class="empty-text">Add pantry items with the + button</div></div>
+  </div>
+
+  <div style="display:flex;gap:8px;margin:8px 16px">
+    <button class="btn btn-secondary" onclick="refreshStockFromScan()" style="flex:1;font-size:.85rem">🔄 From last receipt</button>
+    <button class="btn btn-primary" onclick="getMenuSuggestion()" id="menu-btn" style="flex:2">🤖 Meal ideas</button>
