@@ -12,7 +12,7 @@ if (!localStorage.getItem(STORE_KEY) && localStorage.getItem("folio_data_v1")) {
 
 /* ---------- State ---------- */
 const blankState = () => ({
-  basics: { fullName: "", headline: "", email: "", phone: "", location: "", link: "", summary: "" },
+  basics: { fullName: "", headline: "", email: "", phone: "", location: "", link: "", summary: "", photo: "" },
   education: [], courses: [], activities: [], volunteering: [], projects: [],
   skills: [], languages: [], interests: []
 });
@@ -226,6 +226,37 @@ $("#saveBasics").addEventListener("click", () => {
   setTimeout(() => $("#basicsSaved").textContent = "", 2000);
 });
 
+/* ---------- Photo (compressed and stored locally) ---------- */
+function refreshPhotoUI() {
+  const has = !!state.basics.photo;
+  $("#photoPreview").classList.toggle("hidden", !has);
+  $("#photoRemove").classList.toggle("hidden", !has);
+  if (has) $("#photoPreview").src = state.basics.photo;
+}
+$("#photoInput").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const img = new Image();
+  img.onload = () => {
+    const MAX = 320;
+    const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+    const c = document.createElement("canvas");
+    c.width = Math.round(img.width * scale);
+    c.height = Math.round(img.height * scale);
+    c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+    state.basics.photo = c.toDataURL("image/jpeg", 0.85);
+    URL.revokeObjectURL(img.src);
+    saveState(); refreshPhotoUI(); toast("Photo added ✓");
+  };
+  img.onerror = () => toast("Couldn't read that image — try another one");
+  img.src = URL.createObjectURL(file);
+  e.target.value = "";
+});
+$("#photoRemove").addEventListener("click", () => {
+  state.basics.photo = "";
+  saveState(); refreshPhotoUI(); toast("Photo removed");
+});
+
 /* ---------- Modal (add / edit entries) ---------- */
 let modalCtx = null;
 
@@ -322,15 +353,20 @@ function cvBlocks() {
     languages: cvSection("Languages", state.languages.length ? `<div class="cv-inline">${state.languages.map(s => `<span class="cv-pill">${esc(s)}</span>`).join("")}</div>` : ""),
     interests: cvSection("Interests", state.interests.length ? `<div>${state.interests.map(esc).join(" · ")}</div>` : ""),
     summary: b.summary ? `<div class="cv-summary">${esc(b.summary)}</div>` : "",
-    contact: [b.email, b.phone, b.location, b.link].filter(Boolean).map(x => `<span>${esc(x)}</span>`).join("")
+    contact: [b.email, b.phone, b.location, b.link].filter(Boolean).map(x => `<span>${esc(x)}</span>`).join(""),
+    photo: b.photo ? `<img class="cv-photo" src="${b.photo}" alt="">` : ""
   };
 }
+
+const TEMPLATES = ["modern", "classic", "sidebar", "elegant", "timeline", "compact", "minimal"];
 
 function renderCV() {
   const b = state.basics;
   const sheet = $("#cvSheet");
-  const template = localStorage.getItem("vitae_template") || "modern";
-  $("#cvTemplate").value = template;
+  let template = localStorage.getItem("vitae_template") || "modern";
+  if (!TEMPLATES.includes(template)) template = "modern";
+  document.querySelectorAll(".tpl-btn").forEach(btn =>
+    btn.classList.toggle("active", btn.dataset.tpl === template));
   sheet.className = "cv-sheet " + template;
 
   const hasContent = b.fullName || state.education.length || state.activities.length;
@@ -339,13 +375,14 @@ function renderCV() {
     return;
   }
   const k = cvBlocks();
+  const nameBlock = `<div class="cv-name">${esc(b.fullName) || "Your Name"}</div>
+      ${b.headline ? `<div class="cv-headline">${esc(b.headline)}</div>` : ""}`;
 
   if (template === "sidebar") {
     sheet.innerHTML = `
       <aside class="cvs-side">
-        <div class="cv-name">${esc(b.fullName) || "Your Name"}</div>
-        ${b.headline ? `<div class="cv-headline">${esc(b.headline)}</div>` : ""}
-        ${k.contact ? `<div class="cv-contact">${k.contact}</div>` : ""}
+        <div class="cv-side-head">${k.photo}${nameBlock}
+          ${k.contact ? `<div class="cv-contact">${k.contact}</div>` : ""}</div>
         ${k.skills}${k.languages}${k.interests}
       </aside>
       <div class="cvs-main">
@@ -354,19 +391,47 @@ function renderCV() {
     return;
   }
 
+  if (template === "elegant") {
+    sheet.innerHTML = `
+      <div class="cve-main">
+        <div class="cv-header">${nameBlock}</div>
+        ${k.summary}${k.education}${k.activities}${k.volunteering}${k.projects}${k.courses}
+      </div>
+      <aside class="cve-side">
+        ${k.photo}
+        ${k.contact ? `<div class="cv-contact">${k.contact}</div>` : ""}
+        ${k.skills}${k.languages}${k.interests}
+      </aside>`;
+    return;
+  }
+
+  if (template === "timeline") {
+    sheet.innerHTML = `
+      <div class="cv-header ${k.photo ? "with-photo" : ""}">
+        ${k.photo}<div class="cv-head-text">${nameBlock}
+        ${k.contact ? `<div class="cv-contact">${k.contact}</div>` : ""}</div>
+      </div>
+      ${k.summary}
+      <div class="cv-timeline">${k.education}${k.activities}${k.volunteering}</div>
+      ${k.projects}${k.courses}${k.skills}${k.languages}${k.interests}`;
+    return;
+  }
+
+  /* modern, classic, compact, minimal — single column */
   sheet.innerHTML = `
-    <div class="cv-header">
-      <div class="cv-name">${esc(b.fullName) || "Your Name"}</div>
-      ${b.headline ? `<div class="cv-headline">${esc(b.headline)}</div>` : ""}
-      ${k.contact ? `<div class="cv-contact">${k.contact}</div>` : ""}
+    <div class="cv-header ${k.photo ? "with-photo" : ""}">
+      ${k.photo}<div class="cv-head-text">${nameBlock}
+      ${k.contact ? `<div class="cv-contact">${k.contact}</div>` : ""}</div>
     </div>
     ${k.summary}${k.education}${k.activities}${k.volunteering}
     ${k.projects}${k.courses}${k.skills}${k.languages}${k.interests}
   `;
 }
 
-$("#cvTemplate").addEventListener("change", (e) => {
-  localStorage.setItem("vitae_template", e.target.value);
+$("#tplPicker").addEventListener("click", (e) => {
+  const btn = e.target.closest(".tpl-btn");
+  if (!btn) return;
+  localStorage.setItem("vitae_template", btn.dataset.tpl);
   renderCV();
 });
 $("#printBtn").addEventListener("click", () => window.print());
@@ -606,6 +671,7 @@ $("#wipeBtn").addEventListener("click", () => {
 
 /* ---------- Init ---------- */
 fillBasicsForm();
+refreshPhotoUI();
 renderSections();
 updateProgress();
 renderCV();

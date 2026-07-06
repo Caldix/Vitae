@@ -251,8 +251,37 @@ textarea { resize: vertical; }
   content: ""; display: block; width: 26px; height: 2px; background: var(--gold); margin-top: 5px;
 }
 
+/* ===== Photo upload (About me) ===== */
+.photo-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.photo-preview {
+  width: 64px; height: 64px; border-radius: 50%; object-fit: cover;
+  border: 2px solid var(--iris-tint); box-shadow: var(--shadow);
+}
+
+/* ===== Template picker ===== */
+.tpl-picker { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+.tpl-btn {
+  border: 1.5px solid var(--line); background: var(--card); border-radius: 99px;
+  padding: 7px 16px; font-weight: 600; font-size: 13px; color: var(--muted);
+  cursor: pointer; transition: border-color .15s, color .15s, background .15s;
+}
+.tpl-btn:hover { border-color: var(--iris); color: var(--iris); }
+.tpl-btn.active { background: var(--iris); border-color: var(--iris); color: #fff; }
+
+/* ===== CV photo (in templates) ===== */
+.cv-photo { width: 88px; height: 88px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.cv-header.with-photo { display: flex; align-items: center; gap: 22px; }
+.cv-header.with-photo .cv-head-text { flex: 1; }
+.cv-sheet.classic .cv-header.with-photo { flex-direction: column; gap: 12px; }
+
 /* --- Two-column (sidebar) template --- */
 .cv-sheet.sidebar { padding: 0; display: flex; }
+.cv-sheet.sidebar .cv-photo {
+  width: 110px; height: 110px; margin: 0 auto 18px; display: block;
+  border: 3px solid rgba(255,255,255,.4);
+}
+.cv-sheet.sidebar .cvs-side .cv-side-head { text-align: center; }
+.cv-sheet.sidebar .cvs-side .cv-contact { flex-direction: column; gap: 5px; align-items: center; text-align: center; }
 .cv-sheet.sidebar .cvs-side {
   width: 34%; background: var(--iris-deep); color: #fff;
   padding: 48px 28px;
@@ -275,6 +304,62 @@ textarea { resize: vertical; }
 .cv-sheet.classic .cv-section-title { text-align: center; letter-spacing: .2em; }
 .cv-sheet.classic .cv-pill { border-color: #C9C6BE; }
 
+/* --- Elegant template: light right column, hairline divider --- */
+.cv-sheet.elegant { padding: 0; display: flex; }
+.cv-sheet.elegant .cve-main { width: 65%; padding: 52px 36px 52px 52px; }
+.cv-sheet.elegant .cve-side {
+  width: 35%; padding: 52px 36px 52px 32px;
+  border-left: 1px solid #E3E0D8; background: #FBFAF6;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
+.cv-sheet.elegant .cv-name { font-weight: 500; }
+.cv-sheet.elegant .cv-headline { color: #8A7B4E; font-style: italic; font-family: var(--display); }
+.cv-sheet.elegant .cv-section-title { color: #8A7B4E; letter-spacing: .18em; }
+.cv-sheet.elegant .cve-side .cv-photo { width: 118px; height: 118px; margin: 0 auto 20px; display: block; border: 3px solid #E9E2CE; }
+.cv-sheet.elegant .cve-side .cv-contact { flex-direction: column; gap: 5px; }
+.cv-sheet.elegant .cv-pill { border-color: #DDD6C2; }
+
+/* --- Timeline template: vertical line with milestone dots --- */
+.cv-sheet.timeline .cv-header { border-bottom: 0; padding-bottom: 6px; }
+.cv-sheet.timeline .cv-section-title { color: var(--iris-deep); }
+.cv-sheet.timeline .cv-timeline .cv-item {
+  position: relative; padding-left: 26px; margin-bottom: 16px; margin-left: 5px;
+  border-left: 2px solid var(--iris-tint); padding-bottom: 2px;
+}
+.cv-sheet.timeline .cv-timeline .cv-item:last-child { border-left-color: transparent; }
+.cv-sheet.timeline .cv-timeline .cv-item::before {
+  content: ""; position: absolute; left: -7px; top: 3px;
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--iris); border: 2.5px solid #fff; box-shadow: 0 0 0 2px var(--iris);
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
+.cv-sheet.timeline .cv-item-date { color: var(--iris-deep); font-weight: 600; }
+
+/* --- Compact template: dense, fits more on one page --- */
+.cv-sheet.compact { font-size: 12px; line-height: 1.42; padding: 40px 46px; }
+.cv-sheet.compact .cv-name { font-size: 25px; }
+.cv-sheet.compact .cv-headline { font-size: 13px; }
+.cv-sheet.compact .cv-header { border-bottom: 2px solid #1C1B22; padding-bottom: 10px; }
+.cv-sheet.compact .cv-section { margin-top: 13px; }
+.cv-sheet.compact .cv-section-title { font-size: 10.5px; margin-bottom: 6px; border-bottom: 1px solid var(--line); padding-bottom: 3px; }
+.cv-sheet.compact .cv-item { margin-bottom: 7px; }
+.cv-sheet.compact .cv-photo { width: 68px; height: 68px; }
+.cv-sheet.compact .cv-pill { padding: 2px 9px; font-size: 11px; }
+
+/* --- Minimal template: whitespace, small colour pops --- */
+.cv-sheet.minimal { font-family: var(--body); padding: 64px 68px; }
+.cv-sheet.minimal .cv-name { font-family: var(--body); font-weight: 700; letter-spacing: -.01em; }
+.cv-sheet.minimal .cv-header { border-bottom: 0; padding-bottom: 8px; }
+.cv-sheet.minimal .cv-section { margin-top: 26px; }
+.cv-sheet.minimal .cv-section-title { color: #9A97A6; display: flex; align-items: center; gap: 8px; }
+.cv-sheet.minimal .cv-section-title::before {
+  content: ""; width: 8px; height: 8px; border-radius: 2px; background: var(--gold);
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
+.cv-sheet.minimal .cv-pill { border: 0; background: #F1EFEA; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+.brand-mark.cv { font-size: 15px; letter-spacing: .02em; }
+
 /* ===== Responsive ===== */
 @media (max-width: 720px) {
   .form-grid, .modal-body .form-grid { grid-template-columns: 1fr; }
@@ -284,8 +369,10 @@ textarea { resize: vertical; }
   .tab { flex: 1; padding: 8px 10px; white-space: nowrap; }
   .story-intro h1 { font-size: 27px; }
   .cv-sheet { padding: 32px 24px; min-height: auto; }
-  .cv-sheet.sidebar { padding: 0; flex-direction: column; }
-  .cv-sheet.sidebar .cvs-side, .cv-sheet.sidebar .cvs-main { width: 100%; padding: 28px 24px; }
+  .cv-sheet.sidebar, .cv-sheet.elegant { padding: 0; flex-direction: column; }
+  .cv-sheet.sidebar .cvs-side, .cv-sheet.sidebar .cvs-main,
+  .cv-sheet.elegant .cve-side, .cv-sheet.elegant .cve-main { width: 100%; padding: 28px 24px; }
+  .cv-sheet.elegant .cve-side { border-left: 0; border-top: 1px solid #E3E0D8; }
   .entry { flex-direction: column; }
   .backup-row { flex-wrap: wrap; }
 }
@@ -306,8 +393,10 @@ textarea { resize: vertical; }
     padding: 0; margin: 0;
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
   }
-  .cv-sheet.sidebar { display: flex; }
+  .cv-sheet.sidebar, .cv-sheet.elegant { display: flex; }
   .cv-sheet.sidebar .cvs-side { padding: 24px 20px; }
   .cv-sheet.sidebar .cvs-main { padding: 24px 0 24px 28px; }
+  .cv-sheet.elegant .cve-main { padding: 24px 24px 24px 0; }
+  .cv-sheet.elegant .cve-side { padding: 24px 0 24px 24px; }
   @page { size: A4; margin: 16mm; }
 }

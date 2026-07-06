@@ -15,14 +15,14 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Vitae">
   <link rel="stylesheet" href="style.css">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%234C42A6'/><text x='50' y='68' font-size='52' text-anchor='middle' fill='white' font-family='Georgia'>V</text></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%234C42A6'/><text x='50' y='64' font-size='38' font-weight='bold' text-anchor='middle' fill='white' font-family='Georgia'>CV</text></svg>">
 </head>
 <body>
 
   <!-- ===== App header ===== -->
   <header class="app-header no-print">
     <div class="brand">
-      <div class="brand-mark">V</div>
+      <div class="brand-mark cv">CV</div>
       <div class="brand-text">
         <span class="brand-name">Vitae</span>
         <span class="brand-tag">Your story, professionally told</span>
@@ -65,6 +65,12 @@
           <label>Phone<input type="tel" id="f_phone" placeholder="+40 ..."></label>
           <label>City<input type="text" id="f_location" placeholder="e.g. Bucharest, Romania"></label>
           <label>Link (portfolio, LinkedIn…)<input type="url" id="f_link" placeholder="https://..."></label>
+          <div class="span2 photo-row">
+            <img id="photoPreview" class="photo-preview hidden" alt="Profile photo">
+            <label class="btn small photo-btn"><input type="file" id="photoInput" accept="image/*" hidden>Upload photo</label>
+            <button class="btn small hidden" id="photoRemove" type="button">Remove</button>
+            <span class="muted small">Optional — shown by the templates that include a photo. Stored only on this device.</span>
+          </div>
           <label class="span2">Short summary — 2–3 sentences about you
             <textarea id="f_summary" rows="3" placeholder="e.g. Curious and creative student passionate about art and helping others. Experienced in school theatre and community volunteering."></textarea>
           </label>
@@ -85,15 +91,19 @@
           <p class="muted">Built live from your story. Update anything in <b>My Story</b> and it refreshes here instantly.</p>
         </div>
         <div class="cv-actions">
-          <select id="cvTemplate" aria-label="CV style">
-            <option value="modern">Modern</option>
-            <option value="classic">Classic</option>
-            <option value="sidebar">Two-column</option>
-          </select>
           <button class="btn primary" id="pdfBtn">Save as PDF</button>
           <button class="btn" id="shareBtn">Share</button>
           <button class="btn" id="printBtn" title="Best quality — text stays selectable">Print</button>
         </div>
+      </div>
+      <div class="tpl-picker no-print" id="tplPicker" role="radiogroup" aria-label="CV template">
+        <button class="tpl-btn" data-tpl="modern">Modern</button>
+        <button class="tpl-btn" data-tpl="classic">Classic</button>
+        <button class="tpl-btn" data-tpl="sidebar">Double column</button>
+        <button class="tpl-btn" data-tpl="elegant">Elegant</button>
+        <button class="tpl-btn" data-tpl="timeline">Timeline</button>
+        <button class="tpl-btn" data-tpl="compact">Compact</button>
+        <button class="tpl-btn" data-tpl="minimal">Minimal</button>
       </div>
       <div class="cv-stage">
         <div class="cv-sheet modern" id="cvSheet"><!-- rendered by app.js --></div>
