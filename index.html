@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vitae — Your story, professionally told</title>
+  <meta name="description" content="Collect your studies, activities and passions, then turn them into a professional CV.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <meta name="theme-color" content="#4C42A6">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Vitae">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%234C42A6'/><text x='50' y='68' font-size='52' text-anchor='middle' fill='white' font-family='Georgia'>V</text></svg>">
+</head>
+<body>
+
+  <!-- ===== App header ===== -->
+  <header class="app-header no-print">
+    <div class="brand">
+      <div class="brand-mark">V</div>
+      <div class="brand-text">
+        <span class="brand-name">Vitae</span>
+        <span class="brand-tag">Your story, professionally told</span>
+      </div>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-view="story" role="tab">My Story</button>
+      <button class="tab" data-view="cv" role="tab">My CV</button>
+      <button class="tab" data-view="import" role="tab">Import</button>
+      <button class="tab" data-view="backup" role="tab">Backup</button>
+    </nav>
+  </header>
+
+  <!-- ===== Progress ===== -->
+  <div class="progress-wrap no-print">
+    <div class="progress-label"><span id="progressText">Your story: 0% told</span></div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+  </div>
+
+  <main>
+
+    <!-- ================= MY STORY ================= -->
+    <section id="view-story" class="view active no-print">
+
+      <div class="story-intro">
+        <h1>Everything you've done matters.</h1>
+        <p>Add your studies, courses, activities and passions here — a little at a time, whenever something new happens. Vitae keeps it all safe on this device and turns it into a professional CV whenever you need one.</p>
+      </div>
+
+      <!-- Basics -->
+      <div class="card" id="basicsCard">
+        <div class="card-head">
+          <h2>About me</h2>
+          <span class="card-hint">Who you are and how to reach you</span>
+        </div>
+        <div class="form-grid">
+          <label>Full name<input type="text" id="f_fullName" placeholder="e.g. Maria Popescu"></label>
+          <label>Headline<input type="text" id="f_headline" placeholder="e.g. High school student · Aspiring designer"></label>
+          <label>Email<input type="email" id="f_email" placeholder="name@email.com"></label>
+          <label>Phone<input type="tel" id="f_phone" placeholder="+40 ..."></label>
+          <label>City<input type="text" id="f_location" placeholder="e.g. Bucharest, Romania"></label>
+          <label>Link (portfolio, LinkedIn…)<input type="url" id="f_link" placeholder="https://..."></label>
+          <label class="span2">Short summary — 2–3 sentences about you
+            <textarea id="f_summary" rows="3" placeholder="e.g. Curious and creative student passionate about art and helping others. Experienced in school theatre and community volunteering."></textarea>
+          </label>
+        </div>
+        <div class="card-foot"><button class="btn primary" id="saveBasics">Save about me</button><span class="save-note" id="basicsSaved"></span></div>
+      </div>
+
+      <!-- Dynamic sections rendered by app.js -->
+      <div id="sectionsHost"></div>
+
+    </section>
+
+    <!-- ================= MY CV ================= -->
+    <section id="view-cv" class="view">
+      <div class="cv-toolbar no-print">
+        <div>
+          <h2>Your CV</h2>
+          <p class="muted">Built live from your story. Update anything in <b>My Story</b> and it refreshes here instantly.</p>
+        </div>
+        <div class="cv-actions">
+          <select id="cvTemplate" aria-label="CV style">
+            <option value="modern">Modern</option>
+            <option value="classic">Classic</option>
+            <option value="sidebar">Two-column</option>
+          </select>
+          <button class="btn primary" id="pdfBtn">Save as PDF</button>
+          <button class="btn" id="shareBtn">Share</button>
+          <button class="btn" id="printBtn" title="Best quality — text stays selectable">Print</button>
+        </div>
+      </div>
+      <div class="cv-stage">
+        <div class="cv-sheet modern" id="cvSheet"><!-- rendered by app.js --></div>
+      </div>
+      <p class="cv-tip no-print"><b>Save as PDF</b> downloads the file directly. <b>Share</b> sends it straight to WhatsApp, email and more. <b>Print</b> gives the sharpest text — ideal when applying online, since the text stays selectable for recruitment software.</p>
+    </section>
+
+    <!-- ================= IMPORT ================= -->
+    <section id="view-import" class="view no-print">
+      <div class="story-intro">
+        <h1>Already have a CV or LinkedIn?</h1>
+        <p>Bring your existing information in, review it, and add it to your story with one tap.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>From LinkedIn</h2></div>
+        <ol class="steps">
+          <li>Open your LinkedIn profile in a browser.</li>
+          <li>Click <b>Resources → Save to PDF</b> (or <b>More → Save to PDF</b>).</li>
+          <li>Upload the downloaded PDF below.</li>
+        </ol>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>Upload a PDF CV</h2><span class="card-hint">LinkedIn export or any saved CV</span></div>
+        <label class="dropzone" id="dropzone">
+          <input type="file" id="pdfInput" accept="application/pdf" hidden>
+          <span class="drop-icon">⇪</span>
+          <span><b>Choose a PDF</b> or drag it here</span>
+          <span class="muted small">Everything is read on this device only — nothing is uploaded anywhere.</span>
+        </label>
+        <div id="importStatus" class="muted small"></div>
+      </div>
+
+      <div class="card hidden" id="importReviewCard">
+        <div class="card-head"><h2>Review what we found</h2><span class="card-hint">Check each part, pick the right section, then add it</span></div>
+        <div id="importReview"></div>
+      </div>
+    </section>
+
+    <!-- ================= BACKUP ================= -->
+    <section id="view-backup" class="view no-print">
+      <div class="story-intro">
+        <h1>Keep your story safe.</h1>
+        <p>Your data lives only in this browser. Export a backup file from time to time — you can restore it on any device.</p>
+      </div>
+      <div class="card">
+        <div class="backup-row">
+          <div><h3>Export backup</h3><p class="muted">Saves everything as a single .json file.</p></div>
+          <button class="btn primary" id="exportBtn">Export</button>
+        </div>
+        <div class="backup-row">
+          <div><h3>Restore backup</h3><p class="muted">Load a previously exported .json file.</p></div>
+          <label class="btn"><input type="file" id="importJsonInput" accept="application/json" hidden>Restore</label>
+        </div>
+        <div class="backup-row danger">
+          <div><h3>Start over</h3><p class="muted">Deletes everything from this device. Export first!</p></div>
+          <button class="btn danger" id="wipeBtn">Delete all data</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ===== Entry modal ===== -->
+  <div class="modal-backdrop hidden no-print" id="modalBackdrop">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-head"><h3 id="modalTitle">Add entry</h3><button class="icon-btn" id="modalClose" aria-label="Close">✕</button></div>
+      <div class="modal-body" id="modalBody"></div>
+      <div class="modal-foot">
+        <button class="btn" id="modalCancel">Cancel</button>
+        <button class="btn primary" id="modalSave">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast hidden no-print" id="toast"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
