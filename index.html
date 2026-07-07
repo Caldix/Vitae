@@ -36,6 +36,12 @@
     </nav>
   </header>
 
+  <!-- ===== Profiles ===== -->
+  <div class="profile-bar no-print">
+    <span class="profile-label">Whose CV?</span>
+    <div class="profile-pills" id="profilePills"></div>
+  </div>
+
   <!-- ===== Progress ===== -->
   <div class="progress-wrap no-print">
     <div class="progress-label"><span id="progressText">Your story: 0% told</span></div>
@@ -92,15 +98,19 @@
         </div>
         <div class="cv-actions">
           <button class="btn primary" id="pdfBtn">Save as PDF</button>
+          <button class="btn" id="previewBtn">Preview</button>
           <button class="btn" id="shareBtn">Share</button>
           <button class="btn" id="printBtn" title="Best quality — text stays selectable">Print</button>
         </div>
       </div>
       <div class="tpl-picker no-print" id="tplPicker" role="radiogroup" aria-label="CV template">
-        <button class="tpl-btn" data-tpl="modern">Modern</button>
-        <button class="tpl-btn" data-tpl="classic">Classic</button>
-        <button class="tpl-btn" data-tpl="sidebar">Double column</button>
+        <button class="tpl-btn" data-tpl="stylish">Stylish</button>
+        <button class="tpl-btn" data-tpl="contemporary">Contemporary</button>
         <button class="tpl-btn" data-tpl="elegant">Elegant</button>
+        <button class="tpl-btn" data-tpl="doublecol">Double column</button>
+        <button class="tpl-btn" data-tpl="modern">Modern</button>
+        <button class="tpl-btn" data-tpl="sidebar">Bold</button>
+        <button class="tpl-btn" data-tpl="classic">Classic</button>
         <button class="tpl-btn" data-tpl="timeline">Timeline</button>
         <button class="tpl-btn" data-tpl="compact">Compact</button>
         <button class="tpl-btn" data-tpl="minimal">Minimal</button>
@@ -108,7 +118,7 @@
       <div class="cv-stage">
         <div class="cv-sheet modern" id="cvSheet"><!-- rendered by app.js --></div>
       </div>
-      <p class="cv-tip no-print"><b>Save as PDF</b> downloads the file directly. <b>Share</b> sends it straight to WhatsApp, email and more. <b>Print</b> gives the sharpest text — ideal when applying online, since the text stays selectable for recruitment software.</p>
+      <p class="cv-tip no-print"><b>Save as PDF</b> downloads the file directly and <b>Preview</b> opens it first so you can check it. <b>Share</b> sends it straight to WhatsApp, email and more. <b>Print</b> gives the sharpest text — ideal when applying online, since the text stays selectable for recruitment software.</p>
     </section>
 
     <!-- ================= IMPORT ================= -->
@@ -139,7 +149,7 @@
       </div>
 
       <div class="card hidden" id="importReviewCard">
-        <div class="card-head"><h2>Review what we found</h2><span class="card-hint">Check each part, pick the right section, then add it</span></div>
+        <div class="card-head"><h2>Review what we found</h2><span class="card-hint">The exact sections from your PDF — edit the text, pick where each goes, then add it</span></div>
         <div id="importReview"></div>
       </div>
     </section>
@@ -152,15 +162,15 @@
       </div>
       <div class="card">
         <div class="backup-row">
-          <div><h3>Export backup</h3><p class="muted">Saves everything as a single .json file.</p></div>
+          <div><h3>Export backup</h3><p class="muted">Saves all profiles and CVs as a single .json file.</p></div>
           <button class="btn primary" id="exportBtn">Export</button>
         </div>
         <div class="backup-row">
-          <div><h3>Restore backup</h3><p class="muted">Load a previously exported .json file.</p></div>
-          <label class="btn"><input type="file" id="importJsonInput" accept="application/json" hidden>Restore</label>
+          <div><h3>Import backup</h3><p class="muted">Load a previously exported .json file — restores all profiles.</p></div>
+          <label class="btn"><input type="file" id="importJsonInput" accept="application/json" hidden>Import backup</label>
         </div>
         <div class="backup-row danger">
-          <div><h3>Start over</h3><p class="muted">Deletes everything from this device. Export first!</p></div>
+          <div><h3>Start over</h3><p class="muted">Deletes all profiles from this device. Export first!</p></div>
           <button class="btn danger" id="wipeBtn">Delete all data</button>
         </div>
       </div>
