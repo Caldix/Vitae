@@ -562,33 +562,82 @@ $("#tplPicker").addEventListener("click", (e) => {
 });
 
 /* ============================================================
-   PDF EXPORT — rendered from a fixed-width clone so the text
-   is always framed identically to the on-screen A4 sheet
+   PDF EXPORT — exact A4 fit with smart page breaks
+   The sheet is rendered at exactly 794px (A4 @96dpi), then cut
+   into pages only on "quiet" rows, so text is never sliced and
+   every page keeps clean white space at the bottom.
    ============================================================ */
 function pdfFileName() {
   const n = (state.basics.fullName || activeProfile().label || "My").trim().replace(/\s+/g, "_");
   return `${n}_CV.pdf`;
 }
-function buildPdfWorker() {
-  const wrap = document.createElement("div");
-  wrap.style.cssText = "position:fixed;left:-3000px;top:0;width:794px;background:#fff;pointer-events:none;";
+
+async function renderCvCanvas() {
+  /* hidden zero-height viewport keeps the clone in-flow (off-screen
+     positioning confuses html2canvas and causes blank offsets) */
+  const holder = document.createElement("div");
+  holder.style.cssText = "position:fixed;left:0;top:0;width:794px;height:0;overflow:hidden;z-index:-1;";
   const clone = $("#cvSheet").cloneNode(true);
-  clone.style.width = "794px";
-  clone.style.maxWidth = "794px";
-  clone.style.minHeight = "0";
-  clone.style.boxShadow = "none";
-  wrap.appendChild(clone);
-  document.body.appendChild(wrap);
-  const worker = html2pdf().set({
-    margin: 0,
-    filename: pdfFileName(),
-    image: { type: "jpeg", quality: 0.96 },
-    html2canvas: { scale: 2, useCORS: true, windowWidth: 1200 },
-    jsPDF: { unit: "px", format: [794, 1123], orientation: "portrait", hotfixes: ["px_scaling"] },
-    pagebreak: { mode: ["css", "legacy"] }
-  }).from(clone);
-  return { worker, cleanup: () => wrap.remove() };
+  clone.style.cssText = "width:794px;max-width:794px;min-height:1123px;box-shadow:none;margin:0;";
+  holder.appendChild(clone);
+  document.body.appendChild(holder);
+  try {
+    return await html2canvas(clone, {
+      scale: 2, useCORS: true, backgroundColor: "#ffffff",
+      windowWidth: 794, scrollX: 0, scrollY: 0
+    });
+  } finally { holder.remove(); }
 }
+
+/* a row is "quiet" when it is pixel-identical to the row above it —
+   i.e. we're inside padding, a gap between lines, or a solid colour */
+function rowQuiet(ctx, w, y) {
+  if (y <= 0) return true;
+  const a = ctx.getImageData(0, y, w, 1).data;
+  const b = ctx.getImageData(0, y - 1, w, 1).data;
+  for (let x = 0; x < w; x += 12) {
+    const i = x * 4;
+    if (Math.abs(a[i] - b[i]) > 6 || Math.abs(a[i+1] - b[i+1]) > 6 || Math.abs(a[i+2] - b[i+2]) > 6) return false;
+  }
+  return true;
+}
+function findBreak(ctx, w, target, minY) {
+  const NEED = 5;
+  let run = 0;
+  for (let y = target; y > minY; y--) {
+    if (rowQuiet(ctx, w, y)) { run++; if (run >= NEED) return y + Math.floor(NEED / 2); }
+    else run = 0;
+  }
+  return target; /* nothing quiet found — hard cut as last resort */
+}
+
+async function buildPdf() {
+  const canvas = await renderCvCanvas();
+  const SCALE = 2, PW = 794, PH = 1123;
+  const ctx = canvas.getContext("2d");
+  const topGap = Math.round(26 * SCALE);     /* breathing room at top of pages 2+ */
+  const bottomGap = Math.round(30 * SCALE);  /* white space in every footer */
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ unit: "px", format: [PW, PH], orientation: "portrait", hotfixes: ["px_scaling"] });
+
+  let sy = 0, page = 0;
+  while (sy < canvas.height && page < 30) {
+    const capTop = page === 0 ? 0 : topGap;
+    const maxSlice = PH * SCALE - capTop - bottomGap;
+    let sliceH = Math.min(maxSlice, canvas.height - sy);
+    if (sy + sliceH < canvas.height) {
+      sliceH = Math.max(findBreak(ctx, canvas.width, sy + sliceH, sy + Math.round(maxSlice * 0.55)) - sy, Math.round(maxSlice * 0.4));
+    }
+    const tmp = document.createElement("canvas");
+    tmp.width = canvas.width; tmp.height = sliceH;
+    tmp.getContext("2d").drawImage(canvas, 0, sy, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+    if (page > 0) pdf.addPage([PW, PH], "portrait");
+    pdf.addImage(tmp.toDataURL("image/jpeg", 0.95), "JPEG", 0, capTop / SCALE, PW, sliceH / SCALE);
+    sy += sliceH; page++;
+  }
+  return pdf;
+}
+
 async function withBusy(btn, label, fn) {
   const old = btn.textContent;
   btn.textContent = label; btn.disabled = true;
@@ -598,42 +647,35 @@ async function withBusy(btn, label, fn) {
 }
 
 $("#pdfBtn").addEventListener("click", (e) => withBusy(e.target, "Preparing…", async () => {
-  const { worker, cleanup } = buildPdfWorker();
-  try { await worker.save(); toast("CV saved as PDF ✓"); }
-  finally { cleanup(); }
+  (await buildPdf()).save(pdfFileName());
+  toast("CV saved as PDF ✓");
 }));
 
 $("#previewBtn").addEventListener("click", (e) => withBusy(e.target, "Preparing…", async () => {
-  const { worker, cleanup } = buildPdfWorker();
-  try {
-    const blob = await worker.output("blob");
-    const url = URL.createObjectURL(blob);
-    const win = window.open(url, "_blank");
-    if (!win) {
-      const a = document.createElement("a");
-      a.href = url; a.target = "_blank"; a.rel = "noopener";
-      a.click();
-    }
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
-  } finally { cleanup(); }
+  const blob = (await buildPdf()).output("blob");
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url, "_blank");
+  if (!win) {
+    const a = document.createElement("a");
+    a.href = url; a.target = "_blank"; a.rel = "noopener";
+    a.click();
+  }
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
 }));
 
 $("#shareBtn").addEventListener("click", (e) => withBusy(e.target, "Preparing…", async () => {
-  const { worker, cleanup } = buildPdfWorker();
-  try {
-    const blob = await worker.output("blob");
-    const file = new File([blob], pdfFileName(), { type: "application/pdf" });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], title: "My CV" }).catch(() => {});
-    } else {
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = pdfFileName();
-      a.click();
-      URL.revokeObjectURL(a.href);
-      toast("Sharing isn't available here — the PDF was downloaded instead");
-    }
-  } finally { cleanup(); }
+  const blob = (await buildPdf()).output("blob");
+  const file = new File([blob], pdfFileName(), { type: "application/pdf" });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    await navigator.share({ files: [file], title: "My CV" }).catch(() => {});
+  } else {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = pdfFileName();
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast("Sharing isn't available here — the PDF was downloaded instead");
+  }
 }));
 
 $("#printBtn").addEventListener("click", () => window.print());
@@ -684,45 +726,305 @@ function detectHeader(line) {
   return null;
 }
 
-async function extractPdfLines(file) {
+/* ---- column-aware text extraction (LinkedIn PDFs are two-column) ---- */
+async function extractPdfColumns(file) {
   pdfjsLib.GlobalWorkerOptions.workerSrc =
     "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
   const buf = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
-  const lines = [];
+  const left = [], right = [], all = [];
+
   for (let p = 1; p <= pdf.numPages; p++) {
     const page = await pdf.getPage(p);
+    const vw = page.getViewport({ scale: 1 }).width || 612;
+    const split = vw * 0.30; /* LinkedIn's narrow column lives left of ~30% */
     const content = await page.getTextContent();
-    /* group into rows by Y (with tolerance), keep X order inside a row */
-    const rows = [];
-    for (const it of content.items) {
-      if (!it.str || !it.str.trim()) continue;
-      const y = it.transform[5], x = it.transform[4];
-      let row = rows.find(r => Math.abs(r.y - y) < 3.5);
-      if (!row) { row = { y, items: [] }; rows.push(row); }
-      row.items.push({ x, str: it.str });
+
+    const collect = (filterFn) => {
+      const rows = [];
+      for (const it of content.items) {
+        if (!it.str || !it.str.trim()) continue;
+        const x = it.transform[4], y = it.transform[5];
+        if (!filterFn(x)) continue;
+        let row = rows.find(r => Math.abs(r.y - y) < 3.5);
+        if (!row) { row = { y, items: [] }; rows.push(row); }
+        row.items.push({ x, str: it.str });
+      }
+      rows.sort((a, b) => b.y - a.y);
+      return rows.map(r => {
+        r.items.sort((a, b) => a.x - b.x);
+        return r.items.map(i => i.str).join(" ")
+          .replace(/\u00A0/g, " ")
+          .replace(/\s*Page \d+ of \d+\s*/gi, " ")
+          .replace(/\s+/g, " ").trim();
+      }).filter(Boolean);
+    };
+
+    left.push(...collect(x => x < split));
+    right.push(...collect(x => x >= split));
+    all.push(...collect(() => true));
+  }
+  return { left, right, all };
+}
+
+/* ---- LinkedIn-specific parsing ---- */
+const LI_MONTHS = {
+  january:1,february:2,march:3,april:4,may:5,june:6,july:7,august:8,september:9,october:10,november:11,december:12,
+  ianuarie:1,februarie:2,martie:3,aprilie:4,mai:5,iunie:6,iulie:7,august_ro:8,septembrie:9,octombrie:10,noiembrie:11,decembrie:12
+};
+const LI_MONTH_RE = "(january|february|march|april|may|june|july|august|september|october|november|december|ianuarie|februarie|martie|aprilie|mai|iunie|iulie|august|septembrie|octombrie|noiembrie|decembrie)";
+const LI_DATE_RE = new RegExp(`^${LI_MONTH_RE}\\s+(\\d{4})\\s*[-–]\\s*(${LI_MONTH_RE}\\s+\\d{4}|present|prezent)`, "i");
+const LI_DUR_RE = /^\d+\s+(years?|months?|ani?|luni)\b/i;
+
+function liMonthNum(name) {
+  const n = name.toLowerCase();
+  return LI_MONTHS[n] || LI_MONTHS[n + "_ro"] || 1;
+}
+function liToMonthValue(monthName, year) {
+  return `${year}-${String(liMonthNum(monthName)).padStart(2, "0")}`;
+}
+function liParseDateLine(line) {
+  const m = line.match(LI_DATE_RE);
+  if (!m) return null;
+  const start = liToMonthValue(m[1], m[2]);
+  let end = "";
+  if (!/present|prezent/i.test(m[3])) {
+    const em = m[3].match(new RegExp(`${LI_MONTH_RE}\\s+(\\d{4})`, "i"));
+    if (em) end = liToMonthValue(em[1], em[2]);
+  }
+  return { start, end };
+}
+
+function isLinkedInPdf(allLines) {
+  const joined = allLines.join("\n");
+  const hasSkills = /^(Top Skills|Aptitudini principale)$/mi.test(joined);
+  const hasExp = /^(Experience|Experien[țt][ăa])$/mi.test(joined);
+  const hasLi = /linkedin\.com\//i.test(joined);
+  return (hasSkills && hasExp) || (hasLi && hasExp);
+}
+
+const LI_LEFT_HEADS = [
+  { re: /^(Contact|Contacta[țt]i)$/i, key: "contact" },
+  { re: /^(Top Skills|Aptitudini principale)$/i, key: "skills" },
+  { re: /^(Languages|Limbi)$/i, key: "languages" },
+  { re: /^(Certifications|Certific[ăa]ri)$/i, key: "certs" },
+  { re: /^(Honors-?Awards|Distinc[țt]ii-?Premii)$/i, key: "honors" },
+  { re: /^(Publications|Publica[țt]ii)$/i, key: "publications" }
+];
+const LI_RIGHT_HEADS = [
+  { re: /^(Summary|Rezumat)$/i, key: "summary" },
+  { re: /^(Experience|Experien[țt][ăa])$/i, key: "experience" },
+  { re: /^(Education|Educa[țt]ie|Studii)$/i, key: "education" }
+];
+
+function parseLinkedIn(left, right) {
+  const out = {
+    basics: {}, skills: [], languages: [], certs: [], honors: [], publications: [],
+    experience: [], education: [], summary: ""
+  };
+
+  /* ---- left column buckets ---- */
+  let bucket = null;
+  const buckets = { contact: [], skills: [], languages: [], certs: [], honors: [], publications: [] };
+  for (const line of left) {
+    const head = LI_LEFT_HEADS.find(h => h.re.test(line));
+    if (head) { bucket = head.key; continue; }
+    if (bucket) buckets[bucket].push(line);
+  }
+  const contactText = buckets.contact.join("\n");
+  out.basics.email = (contactText.match(/[\w.+-]+@[\w-]+\.[\w.]+/) || [])[0] || "";
+  out.basics.phone = (contactText.match(/(\+?\d[\d\s().-]{7,}\d)/) || [])[0] || "";
+  const li = contactText.match(/(www\.)?linkedin\.com\/\S+/i);
+  out.basics.link = li ? "https://" + li[0].replace(/^https?:\/\//, "") : "";
+
+  /* multi-line wrapping: a line starting lowercase continues the previous one */
+  const unwrap = (arr) => {
+    const res = [];
+    for (const l of arr) {
+      if (res.length && /^[a-zăâîșț(]/.test(l)) res[res.length - 1] += " " + l;
+      else res.push(l);
     }
-    rows.sort((a, b) => b.y - a.y);
-    for (const row of rows) {
-      row.items.sort((a, b) => a.x - b.x);
-      const text = row.items.map(i => i.str).join(" ").replace(/\s+/g, " ").trim();
-      if (text) lines.push(text);
+    return res;
+  };
+  out.skills = unwrap(buckets.skills);
+  out.languages = unwrap(buckets.languages);
+  out.certs = unwrap(buckets.certs);
+  out.honors = unwrap(buckets.honors);
+  out.publications = unwrap(buckets.publications);
+
+  /* ---- right column: name / headline / location, then sections ---- */
+  let i = 0;
+  const isRightHead = (l) => LI_RIGHT_HEADS.find(h => h.re.test(l));
+  out.basics.fullName = right[0] || "";
+  i = 1;
+  const headlineParts = [];
+  while (i < right.length && !isRightHead(right[i])) {
+    const l = right[i];
+    /* the location is a short comma line right before Summary/Experience */
+    const next = right[i + 1] || "";
+    if (l.includes(",") && l.length < 50 && (isRightHead(next) || headlineParts.length)) {
+      out.basics.location = l; i++;
+      break;
+    }
+    headlineParts.push(l); i++;
+    if (headlineParts.length >= 4) break;
+  }
+  out.basics.headline = headlineParts.join(" ");
+
+  /* slice into sections */
+  const secs = { summary: [], experience: [], education: [] };
+  let cur = null;
+  for (; i < right.length; i++) {
+    const head = isRightHead(right[i]);
+    if (head) { cur = head.key; continue; }
+    if (cur) secs[cur].push(right[i]);
+  }
+  out.summary = secs.summary.join("\n");
+
+  /* experience: entries anchored on date lines */
+  const ex = secs.experience;
+  const dateIdx = [];
+  ex.forEach((l, idx) => { if (LI_DATE_RE.test(l)) dateIdx.push(idx); });
+  dateIdx.forEach((d, n) => {
+    const dates = liParseDateLine(ex[d]) || {};
+    const title = ex[d - 1] || "Role";
+    let org = "";
+    const prevEnd = n === 0 ? -1 : dateIdx[n - 1];
+    let c = d - 2;
+    if (c > prevEnd && ex[c] && LI_DUR_RE.test(ex[c])) c--; /* skip "4 years 2 months" */
+    if (c > prevEnd && ex[c] && ex[c].length < 65 && !/[.!?]$/.test(ex[c])) org = ex[c];
+    const nextD = dateIdx[n + 1];
+    const descEnd = nextD === undefined ? ex.length : Math.max(d + 1, nextD - 2);
+    let desc = ex.slice(d + 1, descEnd);
+    /* first description line is often just the location */
+    if (desc.length && desc[0].length < 45 && desc[0].includes(",") && !/[.!?]$/.test(desc[0])) {
+      org = org ? `${org} — ${desc[0]}` : desc[0];
+      desc = desc.slice(1);
+    }
+    out.experience.push({
+      title, org, start: dates.start || "", end: dates.end || "",
+      details: desc.join("\n")
+    });
+  });
+
+  /* education: "School" then "Degree · (2008 - 2012)" */
+  const ed = secs.education;
+  const eduDateRe = /[·•]?\s*\(?(\d{4})\s*[-–]\s*(\d{4})\)?/;
+  let pendingSchool = "";
+  for (const l of ed) {
+    const m = l.match(eduDateRe);
+    if (m) {
+      const degree = l.replace(eduDateRe, "").replace(/\s*[·•]\s*$/, "").trim();
+      out.education.push({
+        institution: pendingSchool || degree || "School",
+        degree: pendingSchool ? degree : "",
+        start: m[1], end: m[2]
+      });
+      pendingSchool = "";
+    } else if (pendingSchool) {
+      /* wrapped school name or degree without dates */
+      out.education.push({ institution: pendingSchool, degree: l, start: "", end: "" });
+      pendingSchool = "";
+    } else {
+      pendingSchool = l;
     }
   }
-  return lines;
+  if (pendingSchool) out.education.push({ institution: pendingSchool, degree: "", start: "", end: "" });
+
+  return out;
+}
+
+/* ---- merge parsed LinkedIn data into the active profile ---- */
+function applyLinkedInImport(p) {
+  const added = {};
+  const bump = (k, n = 1) => added[k] = (added[k] || 0) + n;
+
+  for (const [k, v] of Object.entries(p.basics)) {
+    if (v && !state.basics[k]) { state.basics[k] = v; bump("contact details"); }
+  }
+  if (p.summary && !state.basics.summary) { state.basics.summary = p.summary; bump("summary"); }
+
+  const pushChips = (key, arr, label) => {
+    for (const it of arr) {
+      const v = it.trim();
+      if (v && v.length < 70 && !state[key].some(x => x.toLowerCase() === v.toLowerCase())) {
+        state[key].push(v); bump(label);
+      }
+    }
+  };
+  pushChips("skills", p.skills, "skills");
+  pushChips("languages", p.languages, "languages");
+
+  const exists = (key, field, val) =>
+    state[key].some(e => (e[field] || "").toLowerCase() === val.toLowerCase());
+
+  for (const e of p.experience) {
+    if (!exists("activities", "title", e.title)) {
+      state.activities.push(Object.assign({ id: uid() }, e)); bump("experience entries");
+    }
+  }
+  for (const e of p.education) {
+    if (!exists("education", "institution", e.institution)) {
+      state.education.push(Object.assign({ id: uid() }, e)); bump("education entries");
+    }
+  }
+  for (const c of p.certs) {
+    if (!exists("courses", "title", c)) {
+      state.courses.push({ id: uid(), title: c.slice(0, 90), org: "", end: "", details: "" });
+      bump("certifications");
+    }
+  }
+  for (const hn of p.honors) {
+    if (!exists("activities", "title", hn)) {
+      state.activities.push({ id: uid(), title: hn.slice(0, 90), org: "Award / honor", start: "", end: "", details: "" });
+      bump("honors & awards");
+    }
+  }
+  for (const pub of p.publications) {
+    if (!exists("projects", "title", pub)) {
+      state.projects.push({ id: uid(), title: pub.slice(0, 90), end: "", link: "", details: "" });
+      bump("publications");
+    }
+  }
+
+  saveState(); renderSections(); fillBasicsForm(); refreshPhotoUI();
+  return added;
+}
+
+function showImportResult(added) {
+  const host = $("#importResult");
+  const parts = Object.entries(added);
+  host.innerHTML = parts.length
+    ? `<div class="chips">${parts.map(([k, n]) =>
+        `<span class="chip">✓ ${n} ${esc(k)}</span>`).join("")}</div>
+       <p class="muted small" style="margin-top:8px">Everything was added to <b>${esc(activeProfile().label)}</b>'s story and is fully editable. Anything already there was kept, not duplicated.</p>`
+    : `<p class="muted">Everything in this PDF was already in your story — nothing new to add.</p>`;
+  $("#importResultCard").classList.remove("hidden");
+  $("#importReviewCard").classList.add("hidden");
 }
 
 async function handlePdf(file) {
   const status = $("#importStatus");
   status.textContent = "Reading PDF…";
+  $("#importResultCard").classList.add("hidden");
+  $("#importReviewCard").classList.add("hidden");
   try {
-    const lines = await extractPdfLines(file);
-    if (!lines.length) {
+    const { left, right, all } = await extractPdfColumns(file);
+    if (!all.length) {
       status.textContent = "Couldn't read text from this PDF (it may be a scanned image). Try another file, or add things by hand in My Story.";
       return;
     }
-    buildImportReview(lines);
-    status.textContent = `Read ${lines.length} lines. Review each section below ↓`;
+    if (isLinkedInPdf(all)) {
+      status.textContent = "LinkedIn profile detected — extracting everything…";
+      const parsed = parseLinkedIn(left, right);
+      const added = applyLinkedInImport(parsed);
+      showImportResult(added);
+      status.textContent = "Done ✓";
+      toast("LinkedIn profile imported ✓");
+    } else {
+      buildImportReview(all);
+      status.textContent = `Read ${all.length} lines. This isn't a LinkedIn export, so review each section below ↓`;
+    }
   } catch (err) {
     console.error(err);
     status.textContent = "Something went wrong while reading the PDF. Try another file, or add things by hand in My Story.";

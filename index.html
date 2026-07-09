@@ -124,32 +124,41 @@
     <!-- ================= IMPORT ================= -->
     <section id="view-import" class="view no-print">
       <div class="story-intro">
-        <h1>Already have a CV or LinkedIn?</h1>
-        <p>Bring your existing information in, review it, and add it to your story with one tap.</p>
+        <h1>Import your LinkedIn profile.</h1>
+        <p>Drop your LinkedIn PDF below and Vitae fills in your whole story automatically — experience, education, skills, languages, certifications. Then just pick a CV format. Free, and everything stays on this device.</p>
       </div>
 
       <div class="card">
-        <div class="card-head"><h2>From LinkedIn</h2></div>
+        <div class="card-head"><h2>1 · Get your LinkedIn PDF</h2><span class="card-hint">takes 10 seconds</span></div>
         <ol class="steps">
-          <li>Open your LinkedIn profile in a browser.</li>
-          <li>Click <b>Resources → Save to PDF</b> (or <b>More → Save to PDF</b>).</li>
-          <li>Upload the downloaded PDF below.</li>
+          <li>Open your LinkedIn profile (app or browser).</li>
+          <li>Tap <b>More</b> (or <b>Resources</b>) → <b>Save to PDF</b>.</li>
+          <li>Come back and drop the file below.</li>
         </ol>
       </div>
 
       <div class="card">
-        <div class="card-head"><h2>Upload a PDF CV</h2><span class="card-hint">LinkedIn export or any saved CV</span></div>
+        <div class="card-head"><h2>2 · Drop it here</h2><span class="card-hint">any CV PDF works too</span></div>
         <label class="dropzone" id="dropzone">
           <input type="file" id="pdfInput" accept="application/pdf" hidden>
           <span class="drop-icon">⇪</span>
-          <span><b>Choose a PDF</b> or drag it here</span>
-          <span class="muted small">Everything is read on this device only — nothing is uploaded anywhere.</span>
+          <span><b>Choose the PDF</b> or drag it here</span>
+          <span class="muted small">Read on this device only — nothing is uploaded anywhere.</span>
         </label>
         <div id="importStatus" class="muted small"></div>
       </div>
 
+      <div class="card hidden" id="importResultCard">
+        <div class="card-head"><h2>Imported into this profile ✓</h2></div>
+        <div id="importResult"></div>
+        <div class="card-foot" style="flex-wrap:wrap">
+          <button class="btn primary" id="goPickTemplate">3 · Choose a CV format →</button>
+          <button class="btn" id="goStory">Review &amp; edit in My Story</button>
+        </div>
+      </div>
+
       <div class="card hidden" id="importReviewCard">
-        <div class="card-head"><h2>Review what we found</h2><span class="card-hint">The exact sections from your PDF — edit the text, pick where each goes, then add it</span></div>
+        <div class="card-head"><h2>Review what we found</h2><span class="card-hint">This PDF isn't a LinkedIn export, so check each section — edit the text, pick where it goes, then add it</span></div>
         <div id="importReview"></div>
       </div>
     </section>
