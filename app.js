@@ -64,7 +64,7 @@ function loadDb() {
     profiles: {
       [id]: {
         label: (data && data.basics.fullName) || "Profile 1",
-        template: localStorage.getItem("vitae_template") || "modern",
+        template: localStorage.getItem("vitae_template") || "stylish",
         data: data || blankData()
       }
     }
@@ -128,7 +128,7 @@ $("#profilePills").addEventListener("click", (e) => {
     const name = prompt("Whose CV is this? (e.g. Maria, Dad…)", "");
     if (name === null) return;
     const id = uid();
-    db.profiles[id] = { label: (name.trim() || `Profile ${Object.keys(db.profiles).length + 1}`).slice(0, 30), template: "modern", data: blankData() };
+    db.profiles[id] = { label: (name.trim() || `Profile ${Object.keys(db.profiles).length + 1}`).slice(0, 30), template: "stylish", data: blankData() };
     switchProfile(id);
     toast("New profile created — start filling in About me");
     return;
@@ -444,13 +444,13 @@ function cvBlocks() {
   };
 }
 
-const TEMPLATES = ["stylish","contemporary","elegant","doublecol","modern","sidebar","classic","timeline","compact","minimal"];
+const TEMPLATES = ["stylish","contemporary","elegant","doublecol","sidebar","minimal"];
 
 function renderCV() {
   const b = state.basics;
   const sheet = $("#cvSheet");
-  let template = activeProfile().template || "modern";
-  if (!TEMPLATES.includes(template)) template = "modern";
+  let template = activeProfile().template || "stylish";
+  if (!TEMPLATES.includes(template)) template = "stylish"; /* removed templates fall back gracefully */
   document.querySelectorAll(".tpl-btn").forEach(btn =>
     btn.classList.toggle("active", btn.dataset.tpl === template));
   sheet.className = "cv-sheet " + template;
@@ -531,18 +531,7 @@ function renderCV() {
         <div class="cvs-main">${mainFlow}</div>`;
       break;
 
-    case "timeline":
-      sheet.innerHTML = `
-        <div class="cv-header ${k.photo ? "with-photo" : ""}">
-          ${k.photo}<div class="cv-head-text">${nameBlock}
-          ${k.contact ? `<div class="cv-contact">${k.contact}</div>` : ""}</div>
-        </div>
-        ${k.summaryBare}
-        <div class="cv-timeline">${k.education}${k.activities}${k.volunteering}</div>
-        ${k.projects}${k.courses}${sideFlow}`;
-      break;
-
-    default: /* modern, classic, compact, minimal — single column */
+    default: /* minimal — single column */
       sheet.innerHTML = `
         <div class="cv-header ${k.photo ? "with-photo" : ""}">
           ${k.photo}<div class="cv-head-text">${nameBlock}
@@ -1164,7 +1153,7 @@ $("#importJsonInput").addEventListener("change", async (e) => {
       const id = uid();
       db.profiles[id] = {
         label: data.basics.fullName || "Imported profile",
-        template: "modern",
+        template: "stylish",
         data: Object.assign(blankData(), data)
       };
       db.activeId = id;
@@ -1179,7 +1168,7 @@ $("#wipeBtn").addEventListener("click", () => {
   if (confirm("Delete ALL profiles and data from this device? This cannot be undone.") &&
       confirm("Are you sure? Export a backup first if you haven't.")) {
     const id = uid();
-    db = { activeId: id, profiles: { [id]: { label: "Profile 1", template: "modern", data: blankData() } } };
+    db = { activeId: id, profiles: { [id]: { label: "Profile 1", template: "stylish", data: blankData() } } };
     state = db.profiles[id].data;
     saveDb(); renderAll();
     toast("All data deleted");

@@ -108,15 +108,11 @@
         <button class="tpl-btn" data-tpl="contemporary">Contemporary</button>
         <button class="tpl-btn" data-tpl="elegant">Elegant</button>
         <button class="tpl-btn" data-tpl="doublecol">Double column</button>
-        <button class="tpl-btn" data-tpl="modern">Modern</button>
         <button class="tpl-btn" data-tpl="sidebar">Bold</button>
-        <button class="tpl-btn" data-tpl="classic">Classic</button>
-        <button class="tpl-btn" data-tpl="timeline">Timeline</button>
-        <button class="tpl-btn" data-tpl="compact">Compact</button>
         <button class="tpl-btn" data-tpl="minimal">Minimal</button>
       </div>
       <div class="cv-stage">
-        <div class="cv-sheet modern" id="cvSheet"><!-- rendered by app.js --></div>
+        <div class="cv-sheet stylish" id="cvSheet"><!-- rendered by app.js --></div>
       </div>
       <p class="cv-tip no-print"><b>Save as PDF</b> downloads the file directly and <b>Preview</b> opens it first so you can check it. <b>Share</b> sends it straight to WhatsApp, email and more. <b>Print</b> gives the sharpest text — ideal when applying online, since the text stays selectable for recruitment software.</p>
     </section>
@@ -202,7 +198,8 @@
   <div class="toast hidden no-print" id="toast"></div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
