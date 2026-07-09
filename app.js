@@ -116,7 +116,8 @@ $("#profilePills").addEventListener("click", (e) => {
   if (del) {
     const id = del.dataset.pdelete;
     if (Object.keys(db.profiles).length <= 1) { toast("You need at least one profile"); return; }
-    if (confirm(`Delete profile "${db.profiles[id].label}" and all its data? This cannot be undone.`)) {
+    if (confirm(`Delete profile "${db.profiles[id].label}" and all its data (including stored documents)? This cannot be undone.`)) {
+      deleteDocsOfProfile(id).catch(() => {});
       delete db.profiles[id];
       db.activeId = Object.keys(db.profiles)[0];
       state = db.profiles[db.activeId].data;
@@ -669,6 +670,211 @@ $("#shareBtn").addEventListener("click", (e) => withBusy(e.target, "Preparing…
 
 $("#printBtn").addEventListener("click", () => window.print());
 
+/* ============================================================
+   DOCUMENTS — diplomas & certificates vault (IndexedDB)
+   Never rendered on the CV; stored per profile for sending
+   alongside it.
+   ============================================================ */
+let _idb = null;
+function docsDb() {
+  return new Promise((res, rej) => {
+    if (_idb) return res(_idb);
+    const rq = indexedDB.open("vitae_docs", 1);
+    rq.onupgradeneeded = () => {
+      const d = rq.result;
+      if (!d.objectStoreNames.contains("docs")) {
+        const s = d.createObjectStore("docs", { keyPath: "id" });
+        s.createIndex("profileId", "profileId");
+      }
+    };
+    rq.onsuccess = () => { _idb = rq.result; res(_idb); };
+    rq.onerror = () => rej(rq.error);
+  });
+}
+async function docStore(mode) {
+  const d = await docsDb();
+  return d.transaction("docs", mode).objectStore("docs");
+}
+async function listDocs(profileId) {
+  const s = await docStore("readonly");
+  return new Promise((res, rej) => {
+    const rq = s.index("profileId").getAll(profileId);
+    rq.onsuccess = () => res(rq.result || []);
+    rq.onerror = () => rej(rq.error);
+  });
+}
+async function allDocs() {
+  const s = await docStore("readonly");
+  return new Promise((res, rej) => {
+    const rq = s.getAll();
+    rq.onsuccess = () => res(rq.result || []);
+    rq.onerror = () => rej(rq.error);
+  });
+}
+async function putDoc(doc) {
+  const s = await docStore("readwrite");
+  return new Promise((res, rej) => {
+    const rq = s.put(doc);
+    rq.onsuccess = () => res();
+    rq.onerror = () => rej(rq.error);
+  });
+}
+async function deleteDoc(id) {
+  const s = await docStore("readwrite");
+  return new Promise((res, rej) => {
+    const rq = s.delete(id);
+    rq.onsuccess = () => res();
+    rq.onerror = () => rej(rq.error);
+  });
+}
+async function deleteDocsOfProfile(profileId) {
+  const docs = await listDocs(profileId);
+  for (const d of docs) await deleteDoc(d.id);
+}
+async function clearAllDocs() {
+  const s = await docStore("readwrite");
+  return new Promise((res, rej) => {
+    const rq = s.clear();
+    rq.onsuccess = () => res();
+    rq.onerror = () => rej(rq.error);
+  });
+}
+
+function prettySize(n) {
+  if (n > 1048576) return (n / 1048576).toFixed(1) + " MB";
+  if (n > 1024) return Math.round(n / 1024) + " KB";
+  return n + " B";
+}
+
+async function addDocFile(file) {
+  if (file.size > 10 * 1048576) { toast(`"${file.name}" is over 10 MB — skipped`); return false; }
+  let blob = file, type = file.type || "application/octet-stream";
+  if (type.startsWith("image/")) {
+    /* downscale big photos so the vault stays light */
+    blob = await new Promise((res) => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 2000;
+        const sc = Math.min(1, MAX / Math.max(img.width, img.height));
+        const c = document.createElement("canvas");
+        c.width = Math.round(img.width * sc);
+        c.height = Math.round(img.height * sc);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(img.src);
+        c.toBlob(b => res(b || file), "image/jpeg", 0.87);
+      };
+      img.onerror = () => res(file);
+      img.src = URL.createObjectURL(file);
+    });
+    type = "image/jpeg";
+  }
+  await putDoc({
+    id: uid(), profileId: db.activeId, name: file.name,
+    type, size: blob.size, added: Date.now(), blob
+  });
+  return true;
+}
+
+async function renderDocs() {
+  const host = $("#docList");
+  const docs = (await listDocs(db.activeId)).sort((a, b) => b.added - a.added);
+  $("#docCount").textContent = docs.length
+    ? `${docs.length} file${docs.length > 1 ? "s" : ""} · ${prettySize(docs.reduce((s, d) => s + d.size, 0))}`
+    : "";
+  if (!docs.length) {
+    host.innerHTML = `<div class="empty-note">Nothing stored yet.</div>`;
+    return;
+  }
+  host.innerHTML = docs.map(d => `
+    <div class="doc-row" data-doc="${d.id}">
+      <span class="doc-icon">${d.type === "application/pdf" ? "📄" : "🖼"}</span>
+      <div class="doc-main">
+        <b>${esc(d.name)}</b>
+        <div class="entry-sub">${prettySize(d.size)} · ${new Date(d.added).toLocaleDateString()}</div>
+      </div>
+      <div class="entry-actions">
+        <button class="icon-btn" data-docopen="${d.id}" aria-label="Open" title="Open">👁</button>
+        <button class="icon-btn" data-docshare="${d.id}" aria-label="Share" title="Share">⇪</button>
+        <button class="icon-btn" data-docrename="${d.id}" aria-label="Rename" title="Rename">✎</button>
+        <button class="icon-btn" data-docdel="${d.id}" aria-label="Delete" title="Delete">🗑</button>
+      </div>
+    </div>`).join("");
+}
+
+async function getDoc(id) {
+  const docs = await listDocs(db.activeId);
+  return docs.find(d => d.id === id);
+}
+
+$("#docList").addEventListener("click", async (e) => {
+  const t = e.target;
+  const id = t.dataset.docopen || t.dataset.docshare || t.dataset.docrename || t.dataset.docdel;
+  if (!id) return;
+  const doc = await getDoc(id);
+  if (!doc) return;
+
+  if (t.dataset.docopen) {
+    const url = URL.createObjectURL(doc.blob);
+    window.open(url, "_blank");
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } else if (t.dataset.docshare) {
+    const file = new File([doc.blob], doc.name, { type: doc.type });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: doc.name }).catch(() => {});
+    } else {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(doc.blob);
+      a.download = doc.name;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+  } else if (t.dataset.docrename) {
+    const name = prompt("Document name:", doc.name);
+    if (name && name.trim()) { doc.name = name.trim().slice(0, 80); await putDoc(doc); renderDocs(); }
+  } else if (t.dataset.docdel) {
+    if (confirm(`Delete "${doc.name}"?`)) { await deleteDoc(id); renderDocs(); toast("Document deleted"); }
+  }
+});
+
+const docDrop = $("#docDrop");
+$("#docInput").addEventListener("change", async (e) => {
+  let n = 0;
+  for (const f of e.target.files) if (await addDocFile(f)) n++;
+  e.target.value = "";
+  if (n) { toast(`${n} document${n > 1 ? "s" : ""} stored ✓`); renderDocs(); }
+});
+["dragover", "dragenter"].forEach(ev => docDrop.addEventListener(ev, e => { e.preventDefault(); docDrop.classList.add("over"); }));
+["dragleave", "drop"].forEach(ev => docDrop.addEventListener(ev, e => { e.preventDefault(); docDrop.classList.remove("over"); }));
+docDrop.addEventListener("drop", async (e) => {
+  let n = 0;
+  for (const f of e.dataTransfer.files) if (await addDocFile(f)) n++;
+  if (n) { toast(`${n} document${n > 1 ? "s" : ""} stored ✓`); renderDocs(); }
+});
+
+$("#shareAllBtn").addEventListener("click", (e) => withBusy(e.target, "Preparing…", async () => {
+  const docs = await listDocs(db.activeId);
+  const files = [];
+  const hasCv = state.basics.fullName || state.education.length || state.activities.length;
+  if (hasCv) {
+    const blob = (await buildPdf()).output("blob");
+    files.push(new File([blob], pdfFileName(), { type: "application/pdf" }));
+  }
+  for (const d of docs) files.push(new File([d.blob], d.name, { type: d.type }));
+  if (!files.length) { toast("Nothing to share yet"); return; }
+  if (navigator.canShare && navigator.canShare({ files })) {
+    await navigator.share({ files, title: "CV & documents" }).catch(() => {});
+  } else {
+    toast("This browser can't share multiple files — opening downloads instead");
+    for (const f of files) {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(f);
+      a.download = f.name;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+  }
+}));
+
 /* ---------- Tabs ---------- */
 document.querySelectorAll(".tab").forEach(tab => {
   tab.addEventListener("click", () => {
@@ -1128,15 +1334,29 @@ dz.addEventListener("drop", (e) => {
 /* ============================================================
    BACKUP — export / import all profiles
    ============================================================ */
-$("#exportBtn").addEventListener("click", () => {
-  const blob = new Blob([JSON.stringify(db, null, 2)], { type: "application/json" });
+const blobToDataUrl = (blob) => new Promise((res, rej) => {
+  const r = new FileReader();
+  r.onload = () => res(r.result);
+  r.onerror = () => rej(r.error);
+  r.readAsDataURL(blob);
+});
+$("#exportBtn").addEventListener("click", (e) => withBusy(e.target, "Exporting…", async () => {
+  const docs = await allDocs().catch(() => []);
+  const documents = [];
+  for (const d of docs) {
+    try {
+      documents.push({ id: d.id, profileId: d.profileId, name: d.name, type: d.type, added: d.added, data: await blobToDataUrl(d.blob) });
+    } catch {}
+  }
+  const payload = Object.assign({}, db, { documents });
+  const blob = new Blob([JSON.stringify(payload)], { type: "application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = `vitae-backup-${new Date().toISOString().slice(0, 10)}.json`;
   a.click();
   URL.revokeObjectURL(a.href);
-  toast("Backup exported (all profiles)");
-});
+  toast("Backup exported (all profiles & documents)");
+}));
 $("#importJsonInput").addEventListener("change", async (e) => {
   const file = e.target.files[0];
   if (!file) return;
@@ -1159,6 +1379,14 @@ $("#importJsonInput").addEventListener("change", async (e) => {
       db.activeId = id;
       state = db.profiles[id].data;
     } else throw new Error("bad file");
+    if (Array.isArray(data.documents)) {
+      for (const d of data.documents) {
+        try {
+          const blob = await (await fetch(d.data)).blob();
+          await putDoc({ id: d.id || uid(), profileId: d.profileId, name: d.name, type: d.type || blob.type, size: blob.size, added: d.added || Date.now(), blob });
+        } catch {}
+      }
+    }
     saveDb(); renderAll();
     toast("Backup imported ✓");
   } catch { toast("That doesn't look like a Vitae backup file"); }
@@ -1170,6 +1398,7 @@ $("#wipeBtn").addEventListener("click", () => {
     const id = uid();
     db = { activeId: id, profiles: { [id]: { label: "Profile 1", template: "stylish", data: blankData() } } };
     state = db.profiles[id].data;
+    clearAllDocs().catch(() => {});
     saveDb(); renderAll();
     toast("All data deleted");
   }
@@ -1183,6 +1412,7 @@ function renderAll() {
   updateProgress();
   renderCV();
   renderProfiles();
+  renderDocs().catch(() => {});
 }
 renderAll();
 

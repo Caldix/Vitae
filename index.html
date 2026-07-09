@@ -32,6 +32,7 @@
       <button class="tab active" data-view="story" role="tab">My Story</button>
       <button class="tab" data-view="cv" role="tab">My CV</button>
       <button class="tab" data-view="import" role="tab">Import</button>
+      <button class="tab" data-view="docs" role="tab">Documents</button>
       <button class="tab" data-view="backup" role="tab">Backup</button>
     </nav>
   </header>
@@ -159,6 +160,33 @@
       </div>
     </section>
 
+    <!-- ================= DOCUMENTS ================= -->
+    <section id="view-docs" class="view no-print">
+      <div class="story-intro">
+        <h1>Diplomas, certificates &amp; papers.</h1>
+        <p>Keep this profile's supporting documents here — diplomas, certificates, adeverințe, recommendation letters. They never appear on the CV; they're stored so you can send them alongside it whenever someone asks. Everything stays on this device.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>Add documents</h2><span class="card-hint">PDF or photos · up to 10 MB each</span></div>
+        <label class="dropzone" id="docDrop">
+          <input type="file" id="docInput" accept="application/pdf,image/*" multiple hidden>
+          <span class="drop-icon">⇪</span>
+          <span><b>Choose files</b> or drag them here</span>
+          <span class="muted small">Stored only on this device — nothing is uploaded anywhere.</span>
+        </label>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>Stored documents</h2><span class="card-hint" id="docCount"></span></div>
+        <div id="docList"><div class="empty-note">Nothing stored yet.</div></div>
+        <div class="card-foot" style="flex-wrap:wrap">
+          <button class="btn primary" id="shareAllBtn">Share CV + all documents</button>
+          <span class="muted small">Sends the generated PDF together with every document in one go.</span>
+        </div>
+      </div>
+    </section>
+
     <!-- ================= BACKUP ================= -->
     <section id="view-backup" class="view no-print">
       <div class="story-intro">
@@ -167,7 +195,7 @@
       </div>
       <div class="card">
         <div class="backup-row">
-          <div><h3>Export backup</h3><p class="muted">Saves all profiles and CVs as a single .json file.</p></div>
+          <div><h3>Export backup</h3><p class="muted">Saves all profiles, CVs and stored documents as a single .json file.</p></div>
           <button class="btn primary" id="exportBtn">Export</button>
         </div>
         <div class="backup-row">
